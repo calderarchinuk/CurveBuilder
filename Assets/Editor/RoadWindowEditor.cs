@@ -66,9 +66,9 @@ public class RoadWindowEditor : EditorWindow
 	void BuildAnchoredRoad()
 	{
 		GameObject go = new GameObject("road");
-		Road r = go.AddComponent<Road>();
-		r.Anchors.Add(selectedAnchorA);
-		r.Anchors.Add(selectedAnchorB);
+		//Road r = go.AddComponent<Road>();
+		//r.Anchors.Add(selectedAnchorA);
+		//r.Anchors.Add(selectedAnchorB);
 	}
 
 	void BuildRoad()
@@ -113,9 +113,9 @@ public class RoadWindowEditor : EditorWindow
 		}
 
 		GameObject go = new GameObject("road");
-		Road r = go.AddComponent<Road>();
-		r.Anchors.Add(highestDotAnchorA);
-		r.Anchors.Add(highestDotAnchorB);
+		//Road r = go.AddComponent<Road>();
+		//r.Anchors.Add(highestDotAnchorA);
+		//r.Anchors.Add(highestDotAnchorB);
 
 		//go through each anchor child of the junction
 		//pick the one with the highest dot
@@ -203,10 +203,11 @@ public class RoadWindowEditor : EditorWindow
 		}
 
 
-		foreach (var r in FindObjectsOfType<Road>())
+
+		/*foreach (var r in FindObjectsOfType<Road>())
 		{
 			DrawRoad(r);
-		}
+		}*/
 
 		if (selectedAnchorA != null)
 		{
@@ -242,9 +243,9 @@ public class RoadWindowEditor : EditorWindow
 					delta = -delta;
 				}
 
-				Debug.Log(delta);
+				//Debug.Log(delta);
 
-				selectedAnchorA.Power = delta;
+				//selectedAnchorA.Power = delta;
 			}
 
 			//Vector3 value = Handles.Slider(selectedAnchorA.transform.position + Vector3.up,selectedAnchorA.transform.forward * selectedAnchorA.Power);
@@ -277,8 +278,14 @@ public class RoadWindowEditor : EditorWindow
 		Handles.EndGUI();    
 	}
 
-	void DrawRoad(Road r)
+	void DrawAnchor(Anchor anchor)
 	{
+
+	}
+
+	void DrawCurve(CubicBezier3D curve)
+	{
+		/*
 		if (r.Anchors.Count != 2){return;}
 		if (r.Anchors[0] == null || r.Anchors[1] == null){return;}
 		Anchor start = r.Anchors[0];
@@ -292,6 +299,6 @@ public class RoadWindowEditor : EditorWindow
 			Color.white,
 			null,
 			5
-		);
+		);*/
 	}
 }

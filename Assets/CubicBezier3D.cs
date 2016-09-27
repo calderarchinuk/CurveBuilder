@@ -1,9 +1,48 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
+//https://www.youtube.com/watch?v=o9RK6O2kOKo
+//https://docs.google.com/presentation/d/10XjxscVrm5LprOmG-VB2DltVyQ_QygD26N6XC2iap2A/edit#slide=id.gc41ce114c_1_31
+
+/// <summary>
+/// hold the description of the curve and the functions to evaluate this curve
+/// </summary>
 public class CubicBezier3D : MonoBehaviour {
 
+	public int SectionCount = 20;
 	public Vector3 p0,p1,p2,p3;
+
+	//TODO allow curve handles to update at runtime / calculate once and cache
+	public bool UpdateCurve = false;
+
+	public List<OrientedPoint> EvaluatePoints()
+	{
+		Vector3[] pts = new Vector3[]{p0,p1,p2,p3};
+		List<OrientedPoint> path = new List<OrientedPoint>();
+		for (int i = 0; i<= SectionCount; i++)
+		{
+			path.Add(new OrientedPoint(GetPoint(pts,i/(float)SectionCount),GetOrientation3D(pts,i/(float)SectionCount,Vector3.up)));
+		}
+		return path;
+	}
+
+	//TODO proper calculations on uvs
+	public void CalcLengthTableInfo(float[] arr, CubicBezier3D bezier)
+	{
+		/*arr[0] = 0f;
+		float totalLength = 0f;
+		Vector3 prev = bezier.p0;
+		for( int i = 1; i < arr.Length; i++ ) {
+			float t = ( (float)i ) / ( arr.Length - 1 );
+			Vector3 pt = bezier.GetPoint( t );
+			float diff = ( prev - pt ).magnitude;
+			totalLength += diff;
+			arr[i] = totalLength;
+			prev = pt;
+		}*/
+	}
+
 
 	public Vector3 GetPoint( Vector3[] pts, float t ) {
 		float omt = 1f-t;

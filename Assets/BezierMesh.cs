@@ -2,7 +2,45 @@
 using System.Collections;
 using System.Collections.Generic;
 
-public class BezierMesh : MonoBehaviour {
+public class BezierMesh : MonoBehaviour
+{
+	public bool UniqueMesh = true;
+	public ExtrudeShape es;
+	public Material material;
+	CubicBezier3D curve;
+
+	void Start()
+	{
+		if (UniqueMesh && GetComponent<UniqueMesh>()==null)gameObject.AddComponent<UniqueMesh>();
+
+		if (GetComponent<MeshFilter>()==null)
+		{
+			gameObject.AddComponent<MeshFilter>();
+		}
+		if (GetComponent<MeshRenderer>()==null)
+		{
+			gameObject.AddComponent<MeshRenderer>();
+			if (material != null)
+				GetComponent<MeshRenderer>().material = material;
+		}
+		curve = GetComponent<CubicBezier3D>();
+		if (!curve.UpdateCurve)
+		{
+			this.enabled = false;
+		}
+		EvalutateAndExtrude();
+	}
+
+	void Update ()
+	{
+		EvalutateAndExtrude();
+	}
+
+	void EvalutateAndExtrude()
+	{
+		List<OrientedPoint> path = curve.EvaluatePoints();
+		Extrude(GetComponent<MeshFilter>().mesh,es,path.ToArray());
+	}
 
 	void Extrude(Mesh mesh, ExtrudeShape shape, OrientedPoint[] path)
 	{
@@ -25,19 +63,10 @@ public class BezierMesh : MonoBehaviour {
 				int id = offset + j;
 				vertices[id] = path[i].LocalToWorld( shape.vert2Ds[j] );
 				normals[id] = path[i].LocalToWorldDirection( shape.normals[j] );
-				uvs[id] = new Vector2( shape.us[j], i / ((float)edgeLoops) ); //use calclengthtable to fix stretching here!
+				uvs[id] = new Vector2( shape.us[j], i / ((float)edgeLoops) ); //TODO use calclengthtable to fix stretching here!
 			}
 		}
 
-		/*for( int i = 0; i < path.Length; i++ ) {
-			int offset = i * vertsInShape;
-			for( int j = 0; j < vertsInShape; j++ ) {
-				int id = offset + j;
-				vertices[id] = path[i].LocalToWorld( shape.vert2Ds[j].point );
-				normals[id] = path[i].LocalToWorldDirection( shape.vert2Ds[j].normal );
-				uvs[id] = new Vector2( shape.vert2Ds[j].uCoord, i / ((float)edgeLoops) );
-			}
-		}*/
 		int ti = 0;
 		for( int i = 0; i < segments; i++ ) {
 			int offset = i * vertsInShape;
@@ -61,41 +90,5 @@ public class BezierMesh : MonoBehaviour {
 		mesh.normals = normals;
 		mesh.uv = uvs;
 
-	}
-
-	void CalcLengthTableInfo(float[] arr, CubicBezier3D bezier)
-	{
-		/*arr[0] = 0f;
-		float totalLength = 0f;
-		Vector3 prev = bezier.p0;
-		for( int i = 1; i < arr.Length; i++ ) {
-			float t = ( (float)i ) / ( arr.Length - 1 );
-			Vector3 pt = bezier.GetPoint( t );
-			float diff = ( prev - pt ).magnitude;
-			totalLength += diff;
-			arr[i] = totalLength;
-			prev = pt;
-		}*/
-	}
-
-	Road r;
-	ExtrudeShape es;
-	void Start () {
-		r = GetComponent<Road>();
-		es = r.ExtrudeShape;
-	}
-	
-	// Update is called once per frame
-	void Update ()
-	{
-		CubicBezier3D cb = GetComponent<CubicBezier3D>();
-		List<OrientedPoint> path = new List<OrientedPoint>();
-		Vector3[] pts = new Vector3[]{cb.p0,cb.p1,cb.p2,cb.p3};
-		for (int i = 0; i<= r.SectionCount; i++)
-		{
-			//cb.GetPoint(new Vector3[]{cb.p0,cb.p3,cb.p1,cb.p2}
-			path.Add(new OrientedPoint(cb.GetPoint(pts,i/(float)r.SectionCount),cb.GetOrientation3D(pts,i/(float)r.SectionCount,Vector3.up)));
-		}
-		Extrude(GetComponent<MeshFilter>().mesh,es,path.ToArray());
 	}
 }
