@@ -5,15 +5,21 @@ using System.Collections.Generic;
 //https://www.youtube.com/watch?v=o9RK6O2kOKo
 //https://docs.google.com/presentation/d/10XjxscVrm5LprOmG-VB2DltVyQ_QygD26N6XC2iap2A/edit#slide=id.gc41ce114c_1_31
 
+//http://blog.meltinglogic.com/2013/12/how-to-generate-procedural-racetracks/
+//http://gamedev.stackexchange.com/questions/75182/how-can-i-create-or-extrude-a-mesh-along-a-spline
+
 /// <summary>
 /// hold the description of the curve and the functions to evaluate this curve
 /// </summary>
 public class CubicBezier3D : MonoBehaviour {
 
 	public int SectionCount = 20;
-	public Vector3 p0,p1,p2,p3;
+	public Vector3 p0;
+	public Vector3 p1 = Vector3.forward*1;
+	public Vector3 p2 = Vector3.forward*2;
+	public Vector3 p3 = Vector3.forward*3;
 
-	//TODO allow curve handles to update at runtime / calculate once and cache
+
 	public bool UpdateCurve = false;
 
 	public List<OrientedPoint> EvaluatePoints()
@@ -26,23 +32,6 @@ public class CubicBezier3D : MonoBehaviour {
 		}
 		return path;
 	}
-
-	//TODO proper calculations on uvs
-	public void CalcLengthTableInfo(float[] arr, CubicBezier3D bezier)
-	{
-		/*arr[0] = 0f;
-		float totalLength = 0f;
-		Vector3 prev = bezier.p0;
-		for( int i = 1; i < arr.Length; i++ ) {
-			float t = ( (float)i ) / ( arr.Length - 1 );
-			Vector3 pt = bezier.GetPoint( t );
-			float diff = ( prev - pt ).magnitude;
-			totalLength += diff;
-			arr[i] = totalLength;
-			prev = pt;
-		}*/
-	}
-
 
 	public Vector3 GetPoint( Vector3[] pts, float t ) {
 		float omt = 1f-t;
@@ -85,5 +74,22 @@ public class CubicBezier3D : MonoBehaviour {
 		Vector3 tng = GetTangent( pts, t );
 		Vector3 nrm = GetNormal3D( pts, t, up );
 		return Quaternion.LookRotation( tng, nrm );
+	}
+
+	public void DrawCurve()
+	{
+		#if UNITY_EDITOR
+
+		UnityEditor.Handles.DrawBezier(
+			p0,
+			p3,
+			p1,
+			p2,
+			Color.white,
+			UnityEditor.EditorGUIUtility.whiteTexture,
+			5
+		);
+
+		#endif
 	}
 }

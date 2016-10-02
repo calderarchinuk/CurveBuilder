@@ -4,6 +4,7 @@ using System.Collections;
 
 public class Anchor : MonoBehaviour
 {
+	
 	public CubicBezier3D Curve;
 	public enum AnchorPointType
 	{
@@ -12,6 +13,8 @@ public class Anchor : MonoBehaviour
 	}
 	public AnchorPointType AnchorPoint;
 	public bool LockCurveToAnchor = true;
+
+	public float Power = 20;
 
 	private static Mesh _anchorMesh;
 	public static Mesh AnchorMesh
@@ -33,7 +36,7 @@ public class Anchor : MonoBehaviour
 	{
 		//Gizmos.DrawWireMesh(
 		Gizmos.color = Color.green;
-		Gizmos.DrawLine(transform.position,transform.forward * 10 + transform.position);
+		Gizmos.DrawLine(transform.position,transform.forward * Power + transform.position);
 
 		Gizmos.color = Color.red;
 		Gizmos.DrawLine(transform.position,transform.right + transform.position);

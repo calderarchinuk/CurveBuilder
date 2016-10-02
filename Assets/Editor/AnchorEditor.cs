@@ -37,7 +37,7 @@ public class AnchorEditor : Editor{
 		if (GUILayout.Button("Snap Curve to Anchor"))
 		{
 			a.Curve.p3 = a.transform.position;
-			a.Curve.p2 = a.transform.forward * 10 + a.transform.position;
+			a.Curve.p2 = a.transform.forward * a.Power + a.transform.position;
 			OnSceneGUI();
 		}
 

@@ -18,5 +18,12 @@ public class CubicBezierEditor : Editor{
 		Handles.color = Color.green;
 		Handles.DrawLine(t.p0,t.p1);
 		Handles.DrawLine(t.p2,t.p3);
+
+		var points = t.EvaluatePoints();
+
+		for (int i = 0; i<points.Count; i++)
+		{
+			Handles.DrawLine(points[i].position,points[i].position+Vector3.up);
+		}
 	}
 }

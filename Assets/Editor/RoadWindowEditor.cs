@@ -1,14 +1,20 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEditor;
 
 public class RoadWindowEditor : EditorWindow
 {
+	//List<Intersection>Intersections = new List<Intersection>();
 
-	Junction selectedJunction;
-	Junction selectedJunction2;
-	Anchor selectedAnchorA;
-	Anchor selectedAnchorB;
+	//Junction selectedJunction;
+	//Junction selectedJunction2;
+	Anchor selectedAnchor;
+	//Material roadMaterial;
+	//ExtrudeShape extrudeShape;
+	Vector3 savedPos;
+	//Anchor selectedAnchorB;
+	RoadEditorSettings settings;
 
 	// Add menu named "My Window" to the Window menu
 	[MenuItem ("Window/RoadEditor")]
@@ -20,14 +26,49 @@ public class RoadWindowEditor : EditorWindow
 
 	void OnGUI ()
 	{
-		GUILayout.Label ("Base Settings", EditorStyles.boldLabel);
+		//GUILayout.BeginHorizontal();
 
-		selectedJunction = (Junction)EditorGUILayout.ObjectField(selectedJunction,typeof(Junction),true);
-		selectedJunction2 = (Junction)EditorGUILayout.ObjectField(selectedJunction2,typeof(Junction),true);
+		if (GUILayout.Button("New"))
+		{
+			RoadEditorSettings asset = ScriptableObject.CreateInstance<RoadEditorSettings>();
 
-		bool valid = selectedJunction != null && selectedJunction2 != null && selectedJunction != selectedJunction2;
+			AssetDatabase.CreateAsset(asset, "Assets/NewScripableObject.asset");
+			AssetDatabase.SaveAssets();
 
-		EditorGUI.BeginDisabledGroup(!valid);
+			EditorUtility.FocusProjectWindow();
+
+			Selection.activeObject = asset;
+			settings = asset;
+		}
+		settings = (RoadEditorSettings)EditorGUILayout.ObjectField("Road Editor Settings",settings,typeof(RoadEditorSettings),false);
+
+
+		GUILayout.Box("", new GUILayoutOption[] { GUILayout.ExpandWidth(true), GUILayout.Height(1) });
+
+		//GUILayout.EndHorizontal();
+		if (settings == null){return;}
+		EditorGUI.BeginDisabledGroup(settings == null);
+
+		//GUILayout.Label ("Settings", EditorStyles.boldLabel);
+
+		settings.roadMaterial = (Material)EditorGUILayout.ObjectField("Road Material",settings.roadMaterial,typeof(Material),false);
+		settings.extudeShape = (ExtrudeShape)EditorGUILayout.ObjectField("Extrude Shape",settings.extudeShape,typeof(ExtrudeShape),false);
+
+		ListHeader(settings.Intersections,"Intersections");
+		for (int i = 0; settings.Intersections.Count > i;i++)
+		{
+			GUILayout.Space(10);
+			settings.Intersections[i].Name = EditorGUILayout.TextField("Name",settings.Intersections[i].Name);
+			settings.Intersections[i].Prefab = (GameObject)EditorGUILayout.ObjectField("Prefab",settings.Intersections[i].Prefab,typeof(GameObject),false);
+			//Intersections[i].Prefabs = editoruig
+		}
+
+		//selectedJunction = (Junction)EditorGUILayout.ObjectField(selectedJunction,typeof(Junction),true);
+		//selectedJunction2 = (Junction)EditorGUILayout.ObjectField(selectedJunction2,typeof(Junction),true);
+
+		//bool valid = selectedJunction != null && selectedJunction2 != null && selectedJunction != selectedJunction2;
+
+		/*EditorGUI.BeginDisabledGroup(!valid);
 		if (GUILayout.Button("Generate Road"))
 		{
 			BuildRoad();
@@ -37,7 +78,9 @@ public class RoadWindowEditor : EditorWindow
 		if (GUILayout.Button("Clear"))
 		{
 			Clear();
-		}
+		}*/
+
+		EditorGUI.EndDisabledGroup();
 	}
 
 	// Window has been selected
@@ -57,23 +100,46 @@ public class RoadWindowEditor : EditorWindow
 
 	void Clear()
 	{
-		selectedJunction = null;
-		selectedJunction2 = null;
-		selectedAnchorB = null;
-		selectedAnchorA = null;
+		selectedAnchor = null;
+		showWindow = false;
 	}
 
-	void BuildAnchoredRoad()
+	public void ListHeader(List<Intersection> _list, string _label)
 	{
-		GameObject go = new GameObject("road");
-		//Road r = go.AddComponent<Road>();
-		//r.Anchors.Add(selectedAnchorA);
-		//r.Anchors.Add(selectedAnchorB);
+		GUILayout.BeginHorizontal();
+		GUILayout.Label(_label);
+		if (_list.Count > 0)
+		{
+			if (GUILayout.Button("-",GUILayout.Width(50)))
+				_list.RemoveAt(_list.Count-1);
+		}
+		if (GUILayout.Button("+",GUILayout.Width(50)))
+			_list.Add(new Intersection());
+		GUILayout.EndHorizontal();
 	}
 
-	void BuildRoad()
+	void BuildRoad(Anchor begin, Anchor end)
 	{
-		if (selectedAnchorA != null && selectedAnchorB != null && selectedAnchorA != selectedAnchorB)
+		if (begin == null || end == null){return;}
+
+		GameObject go = new GameObject("Road");
+		var curve = go.AddComponent<CubicBezier3D>();
+		var mesh = go.AddComponent<BezierMesh>();
+		mesh.material = settings.roadMaterial;
+		mesh.es = settings.extudeShape;
+
+
+		curve.SectionCount = (int)Vector3.Distance(begin.transform.position,end.transform.position) * 2;
+
+		curve.p0 = begin.transform.position;
+		curve.p1 = begin.transform.position + begin.transform.forward * begin.Power;
+		curve.p2 = end.transform.position + end.transform.forward * end.Power;
+		curve.p3 = end.transform.position;
+
+		begin.Curve = curve;
+		end.Curve = curve;
+
+		/*if (selectedAnchorA != null && selectedAnchorB != null && selectedAnchorA != selectedAnchorB)
 		{
 			BuildAnchoredRoad();
 			return;
@@ -120,169 +186,100 @@ public class RoadWindowEditor : EditorWindow
 		//go through each anchor child of the junction
 		//pick the one with the highest dot
 
-		//create a road between the two anchors with high dots
+		//create a road between the two anchors with high dots*/
+	}
+	bool showWindow;
+	void ShowWindow()
+	{
+		Handles.BeginGUI();
+		foreach (var v in settings.Intersections)
+		{
+			if (GUILayout.Button(v.Name))
+			{
+				var prefab = (GameObject)PrefabUtility.InstantiatePrefab(v.Prefab);
+				prefab.transform.position = savedPos;
+			}
+		}
+		Handles.EndGUI();
 	}
 
 	void OnSceneGUI(SceneView sceneView) {
 		// Do your drawing here using Handles.
 
+		if (showWindow){ShowWindow();}
+
 		Event e = Event.current;
+		Ray r = HandleUtility.GUIPointToWorldRay( Event.current.mousePosition );
+
+		RaycastHit hit = new RaycastHit();
+		Plane zeroplane = new Plane(Vector3.up,Vector2.zero);
+		float zeroplaneDistance = 0;
+		Vector3 hitPoint = Vector3.zero;
+
+		if (Physics.Raycast(r,out hit, 1000))
+		{
+			Debug.DrawRay(hit.point,Vector3.up);
+			hitPoint = hit.point;
+		}
+		else if (zeroplane.Raycast(r,out zeroplaneDistance))
+		{
+			hitPoint = r.GetPoint(zeroplaneDistance);
+		}
+
+
 		if (e.type == EventType.keyDown)
 		{
-			if (e.keyCode == KeyCode.C)
+			if (e.keyCode == KeyCode.Escape)
 			{
 				Clear();
 			}
-			if (e.keyCode == KeyCode.B)
-			{
-				BuildRoad();
-			}
-		}
 
-		foreach (var j in FindObjectsOfType<Junction>())
-		{
-			//Handles.DrawWireDisc(j.transform.position,j.transform.up,4);
-			if (Handles.Button(j.transform.position,Quaternion.LookRotation(Vector3.up),4,4,Handles.CircleCap))
-			{
-				if (Event.current.shift)
-				{
-					if (j == selectedJunction)
-					{
-						selectedJunction = null;
-					}
-					if (j == selectedJunction2)
-					{
-						selectedJunction2 = null;
-					}
-				}
-				else
-				{
-					if (selectedJunction == null)
-					{
-						selectedJunction = j;
-					}
-					else if (j != selectedJunction)
-					{
-						selectedJunction2 = j;
-					}
-				}
-			}
+			if (e.keyCode == KeyCode.I)
+			showWindow = !showWindow;
+			//gui popup window
 		}
 
 		foreach (var a in FindObjectsOfType<Anchor>())
 		{
+			if (a.Curve != null)
+			{
+				a.Curve.DrawCurve();
+				continue;
+			}
 			//Handles.DrawWireDisc(j.transform.position,j.transform.up,4);
 			if (Handles.Button(a.transform.position+a.transform.forward * 3.5f,Quaternion.LookRotation(Vector3.up),1,1,Handles.CircleCap))
 			{
-				if (Event.current.shift)
+				if (selectedAnchor == null)
 				{
-					if (a == selectedAnchorA)
-					{
-						selectedAnchorA = null;
-					}
-					if (a == selectedAnchorB)
-					{
-						selectedAnchorB = null;
-					}
+					selectedAnchor = a;
+					break;
 				}
 				else
 				{
-					if (selectedAnchorA == null)
-					{
-						selectedAnchorA = a;
-					}
-					else if (a != selectedAnchorB)
-					{
-						selectedAnchorB = a;
-					}
+					BuildRoad(selectedAnchor,a);
+					Clear();
 				}
 			}
-
-			//TODO put these along the outside of the ring
-			//Handles.DrawWireDisc(a.transform.position+a.transform.forward * 3.5f,Vector3.up,1);
 		}
 
-
-
-		/*foreach (var r in FindObjectsOfType<Road>())
+		if (!showWindow)
 		{
-			DrawRoad(r);
-		}*/
-
-		if (selectedAnchorA != null)
-		{
-			Handles.color = new Color( 0, 0, 1, 0.4f );
-			Handles.DrawSolidDisc(selectedAnchorA.transform.position+selectedAnchorA.transform.forward * 3.5f,Vector3.up,1);
-
-			Vector3 outvalue = selectedAnchorA.transform.position;
-
-			outvalue = Handles.Slider(outvalue + Vector3.up,selectedAnchorA.transform.forward);
-
-			/*outvalue = Handles.Slider2D(outvalue + Vector3.up,
-				selectedAnchorA.transform.forward,
-				selectedAnchorA.transform.forward,
-				selectedAnchorA.transform.forward,
-				5,
-				Handles.ArrowCap,
-				0.001f,
-				true
-			);*/
-			outvalue += Vector3.down;
-
-			float delta = (outvalue-selectedAnchorA.transform.position).magnitude;
-
-			if (delta > 0)
-			{
-
-				//outvalue - selectedAnchorA.transform.position 
-
-
-
-				if (Vector3.Dot(selectedAnchorA.transform.forward + selectedAnchorA.transform.position,selectedAnchorA.transform.position)>Vector3.Dot(selectedAnchorA.transform.forward + selectedAnchorA.transform.position,outvalue))
-				{
-					delta = -delta;
-				}
-
-				//Debug.Log(delta);
-
-				//selectedAnchorA.Power = delta;
-			}
-
-			//Vector3 value = Handles.Slider(selectedAnchorA.transform.position + Vector3.up,selectedAnchorA.transform.forward * selectedAnchorA.Power);
-			//selectedAnchorA.Power += (value - selectedAnchorA.transform.position).magnitude;
+			savedPos = hitPoint;
 		}
+		Handles.color = Color.blue;
+		Handles.DrawWireDisc(savedPos,Vector3.up,5);
 
-		if (selectedAnchorB != null)
+		if (selectedAnchor != null)
 		{
-			Handles.color = new Color( 0, 0, 1, 0.1f );
-			Handles.DrawSolidDisc(selectedAnchorB.transform.position+selectedAnchorB.transform.forward * 3.5f,Vector3.up,1);
+			Handles.DrawDottedLine(selectedAnchor.transform.position,savedPos,3);
 		}
-
-		if (selectedJunction != null)
-		{
-			Handles.color = new Color( 0, 1, 0, 0.4f );
-			Handles.DrawSolidDisc(selectedJunction.transform.position,Vector3.up,4);
-		}
-
-		if (selectedJunction2 != null)
-		{
-			Handles.color = new Color( 0, 1, 0, 0.1f );
-			Handles.DrawSolidDisc(selectedJunction2.transform.position,Vector3.up,4);
-		}
-		Handles.color = Color.white;
-
-
-		Handles.BeginGUI();
-
-		// Do your drawing here using GUI.
-		Handles.EndGUI();    
 	}
 
 	void DrawAnchor(Anchor anchor)
 	{
 
 	}
-
+		
 	void DrawCurve(CubicBezier3D curve)
 	{
 		/*

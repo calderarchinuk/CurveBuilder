@@ -21,4 +21,14 @@ public class ExtrudeShape: ScriptableObject
 		2, 1,
 		1, 0
 	};
+
+	public float UTotalLength()
+	{
+		float f = 0;
+		for(int i = 0; i<vert2Ds.Length-1; i++)
+		{
+			f += Vector2.Distance(vert2Ds[i],vert2Ds[i+1]);
+		}
+		return f;
+	}
 }
