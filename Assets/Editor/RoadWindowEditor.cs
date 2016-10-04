@@ -147,6 +147,7 @@ public class RoadWindowEditor : EditorWindow
 
 		EditorUtility.SetDirty(begin);
 		EditorUtility.SetDirty(end);
+		UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
 	}
 
 	bool showWindow;
@@ -258,8 +259,11 @@ public class RoadWindowEditor : EditorWindow
 						if (delta > 0.01f)
 						{
 							a.Power = delta;
-							Debug.Log(a.Power);
+							//Debug.Log(a.Power);
+							EditorUtility.SetDirty(a);
+							UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
 						}
+						Handles.Label(a.transform.position + Vector3.up,"Power "+a.Power);
 					}
 				}
 			}
