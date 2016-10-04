@@ -76,6 +76,7 @@ public class CubicBezier3D : MonoBehaviour {
 		return Quaternion.LookRotation( tng, nrm );
 	}
 
+	Color editorColor = new Color(1f,1f,0.5f,0.3f);
 	public void DrawCurve()
 	{
 		#if UNITY_EDITOR
@@ -85,11 +86,16 @@ public class CubicBezier3D : MonoBehaviour {
 			p3,
 			p1,
 			p2,
-			Color.white,
+			editorColor,
 			UnityEditor.EditorGUIUtility.whiteTexture,
 			5
 		);
 
 		#endif
+	}
+
+	void OnDrawGizmos()
+	{
+		
 	}
 }

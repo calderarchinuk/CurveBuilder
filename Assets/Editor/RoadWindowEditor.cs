@@ -5,18 +5,10 @@ using UnityEditor;
 
 public class RoadWindowEditor : EditorWindow
 {
-	//List<Intersection>Intersections = new List<Intersection>();
-
-	//Junction selectedJunction;
-	//Junction selectedJunction2;
 	Anchor selectedAnchor;
-	//Material roadMaterial;
-	//ExtrudeShape extrudeShape;
 	Vector3 savedPos;
-	//Anchor selectedAnchorB;
-	RoadEditorSettings settings;
+	static RoadEditorSettings settings;
 
-	// Add menu named "My Window" to the Window menu
 	[MenuItem ("Window/RoadEditor")]
 	static void Init () {
 		// Get existing open window or if none, make a new one:
@@ -28,7 +20,7 @@ public class RoadWindowEditor : EditorWindow
 	{
 		//GUILayout.BeginHorizontal();
 
-		if (GUILayout.Button("New"))
+		if (GUILayout.Button("New Road Settings"))
 		{
 			RoadEditorSettings asset = ScriptableObject.CreateInstance<RoadEditorSettings>();
 
@@ -63,24 +55,38 @@ public class RoadWindowEditor : EditorWindow
 			//Intersections[i].Prefabs = editoruig
 		}
 
-		//selectedJunction = (Junction)EditorGUILayout.ObjectField(selectedJunction,typeof(Junction),true);
-		//selectedJunction2 = (Junction)EditorGUILayout.ObjectField(selectedJunction2,typeof(Junction),true);
-
-		//bool valid = selectedJunction != null && selectedJunction2 != null && selectedJunction != selectedJunction2;
-
-		/*EditorGUI.BeginDisabledGroup(!valid);
-		if (GUILayout.Button("Generate Road"))
+		if (GUILayout.Button("Rebuild All Roads"))
 		{
-			BuildRoad();
+			RebuildAllRoads();
 		}
-		EditorGUI.EndDisabledGroup();
 
-		if (GUILayout.Button("Clear"))
+		if (GUILayout.Button("Bake Road Meshes"))
 		{
-			Clear();
-		}*/
+			Bake();
+		}
+
+		if (GUI.changed)
+		{
+			EditorUtility.SetDirty(settings);
+		}
 
 		EditorGUI.EndDisabledGroup();
+
+
+	}
+
+	void Bake()
+	{
+		foreach(CubicBezier3D curve in FindObjectsOfType<CubicBezier3D>())
+		{
+			var beziermesh = curve.GetComponent<BezierMesh>();
+			if (!beziermesh){continue;}
+			beziermesh.Clear();
+			//scrap old meshes!
+			beziermesh.Start();
+			AssetDatabase.CreateAsset(beziermesh.GetComponent<MeshFilter>().mesh,"Assets/RoadMesh/Road"+beziermesh.GetComponent<MeshFilter>().mesh.GetInstanceID().ToString()+".asset");
+		}
+		AssetDatabase.SaveAssets();
 	}
 
 	// Window has been selected
@@ -139,55 +145,10 @@ public class RoadWindowEditor : EditorWindow
 		begin.Curve = curve;
 		end.Curve = curve;
 
-		/*if (selectedAnchorA != null && selectedAnchorB != null && selectedAnchorA != selectedAnchorB)
-		{
-			BuildAnchoredRoad();
-			return;
-		}
-
-		if (selectedJunction == null || selectedJunction2 == null || selectedJunction == selectedJunction2){return;}
-		if (selectedJunction.GetComponentInChildren<Anchor>() == null){return;}
-		if (selectedJunction2.GetComponentInChildren<Anchor>() == null){return;}
-
-		Anchor highestDotAnchorA = null;
-		float highestDot = -1;
-
-		Vector3 abDirection = (selectedJunction.transform.position-selectedJunction2.transform.position).normalized;
-		Vector3 baDirection = (selectedJunction2.transform.position-selectedJunction.transform.position).normalized;
-
-		//go through each anchor child of the junction
-		foreach (var a in selectedJunction.GetComponentsInChildren<Anchor>())
-		{
-			if (Vector3.Dot(a.transform.forward,baDirection)> highestDot)
-			{
-				highestDot = Vector3.Dot(a.transform.forward,baDirection);
-				highestDotAnchorA = a;
-			}
-		}
-		//pick the one with the highest dot
-		//save
-
-		Anchor highestDotAnchorB = null;
-		highestDot = -1;
-		foreach (var a in selectedJunction2.GetComponentsInChildren<Anchor>())
-		{
-			if (Vector3.Dot(a.transform.forward,abDirection)> highestDot)
-			{
-				highestDot = Vector3.Dot(a.transform.forward,abDirection);
-				highestDotAnchorB = a;
-			}
-		}
-
-		GameObject go = new GameObject("road");
-		//Road r = go.AddComponent<Road>();
-		//r.Anchors.Add(highestDotAnchorA);
-		//r.Anchors.Add(highestDotAnchorB);
-
-		//go through each anchor child of the junction
-		//pick the one with the highest dot
-
-		//create a road between the two anchors with high dots*/
+		EditorUtility.SetDirty(begin);
+		EditorUtility.SetDirty(end);
 	}
+
 	bool showWindow;
 	void ShowWindow()
 	{
@@ -198,6 +159,7 @@ public class RoadWindowEditor : EditorWindow
 			{
 				var prefab = (GameObject)PrefabUtility.InstantiatePrefab(v.Prefab);
 				prefab.transform.position = savedPos;
+				showWindow = false;
 			}
 		}
 		Handles.EndGUI();
@@ -206,6 +168,11 @@ public class RoadWindowEditor : EditorWindow
 	void OnSceneGUI(SceneView sceneView) {
 		// Do your drawing here using Handles.
 
+		if (settings == null)
+		{
+			//redraw this window
+			return;
+		}
 		if (showWindow){ShowWindow();}
 
 		Event e = Event.current;
@@ -218,7 +185,7 @@ public class RoadWindowEditor : EditorWindow
 
 		if (Physics.Raycast(r,out hit, 1000))
 		{
-			Debug.DrawRay(hit.point,Vector3.up);
+			//Debug.DrawRay(hit.point,Vector3.up);
 			hitPoint = hit.point;
 		}
 		else if (zeroplane.Raycast(r,out zeroplaneDistance))
@@ -235,7 +202,7 @@ public class RoadWindowEditor : EditorWindow
 			}
 
 			if (e.keyCode == KeyCode.I)
-			showWindow = !showWindow;
+				showWindow = !showWindow;
 			//gui popup window
 		}
 
@@ -273,11 +240,54 @@ public class RoadWindowEditor : EditorWindow
 		{
 			Handles.DrawDottedLine(selectedAnchor.transform.position,savedPos,3);
 		}
+
+		if (Selection.activeGameObject != null)
+		{
+			var curve = Selection.activeGameObject.GetComponent<CubicBezier3D>();
+
+			if (curve)
+			{
+				foreach (var a in FindObjectsOfType<Anchor>())
+				{
+					if (a.Curve == curve)
+					{
+						
+						Vector3 value = Handles.Slider(a.transform.position + Vector3.up,a.transform.forward * a.Power);
+
+						float delta = Vector3.Distance(value+Vector3.down,a.transform.position);
+						if (delta > 0.01f)
+						{
+							a.Power = delta;
+							Debug.Log(a.Power);
+						}
+					}
+				}
+			}
+		}
 	}
 
-	void DrawAnchor(Anchor anchor)
+	void RebuildAllRoads()
 	{
-
+		Dictionary<CubicBezier3D,Anchor>Curves = new Dictionary<CubicBezier3D,Anchor>();
+		foreach (Anchor a in Object.FindObjectsOfType<Anchor>())
+		{
+			
+			CubicBezier3D curve = a.Curve;
+			if (curve == null){continue;}
+			if (Curves.ContainsKey(curve))
+			{
+				//rebuilt
+				curve.p0 = Curves[curve].transform.position;
+				curve.p1 = Curves[curve].transform.position + Curves[curve].transform.forward * Curves[curve].Power;
+				curve.p2 = a.transform.position + a.transform.forward * a.Power;
+				curve.p3 = a.transform.position;
+				Curves.Remove(curve);
+			}
+			else
+			{
+				Curves.Add(curve,a);
+			}
+		}
 	}
 		
 	void DrawCurve(CubicBezier3D curve)

@@ -7,25 +7,7 @@ public class AnchorEditor : Editor{
 
 	void OnSceneGUI()
 	{
-		Anchor a = target as Anchor;
-
-		if (a.Curve != null)
-		{
-			Handles.color = Color.red;
-			if (a.AnchorPoint == Anchor.AnchorPointType.Start)
-			{
-				Handles.DrawDottedLine(a.transform.position,a.Curve.p0,4);
-			}
-			else
-			{
-				Handles.DrawDottedLine(a.transform.position,a.Curve.p3,4);
-			}
-
-			if (a.LockCurveToAnchor)
-			{
-				//TODO move point and relevant tangent as this moves
-			}
-		}
+		//Anchor a = target as Anchor;
 	}
 
 	public override void OnInspectorGUI ()

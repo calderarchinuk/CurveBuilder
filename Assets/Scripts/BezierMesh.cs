@@ -9,7 +9,7 @@ public class BezierMesh : MonoBehaviour
 	public Material material;
 	CubicBezier3D curve;
 
-	void Start()
+	public void Start()
 	{
 		//if (UniqueMesh && GetComponent<UniqueMesh>()==null)gameObject.AddComponent<UniqueMesh>();
 
@@ -29,6 +29,12 @@ public class BezierMesh : MonoBehaviour
 			this.enabled = false;
 		}
 		EvalutateAndExtrude();
+
+		if (GetComponent<MeshCollider>() == null)
+		{
+			gameObject.AddComponent<MeshCollider>();
+		}
+		mesh.Optimize();
 	}
 
 	//unique mesh
@@ -46,7 +52,8 @@ public class BezierMesh : MonoBehaviour
 	protected Mesh mesh { // The mesh to edit
 		get{
 			bool isOwner = ownerID == gameObject.GetInstanceID();
-			if( mf.sharedMesh == null || !isOwner ){
+			if( mf.sharedMesh == null || !isOwner )
+			{
 				mf.sharedMesh = _mesh = new Mesh();
 				ownerID = gameObject.GetInstanceID();
 				_mesh.name = "Mesh [" + ownerID + "]";
@@ -55,7 +62,13 @@ public class BezierMesh : MonoBehaviour
 		}
 	}
 
-
+	public void Clear()
+	{
+		DestroyImmediate(GetComponent<MeshRenderer>());
+		DestroyImmediate(GetComponent<MeshFilter>());
+		DestroyImmediate(GetComponent<MeshCollider>());
+		this.enabled = true;
+	}
 
 	void Update ()
 	{
