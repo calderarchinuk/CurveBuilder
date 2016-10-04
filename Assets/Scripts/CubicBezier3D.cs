@@ -22,6 +22,7 @@ public class CubicBezier3D : MonoBehaviour {
 
 	public bool UpdateCurve = false;
 
+	//TODO if this curve isn't being update, cache these points
 	public List<OrientedPoint> EvaluatePoints()
 	{
 		Vector3[] pts = new Vector3[]{p0,p1,p2,p3};

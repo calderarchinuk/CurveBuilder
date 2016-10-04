@@ -82,7 +82,7 @@ public class RoadWindowEditor : EditorWindow
 			var beziermesh = curve.GetComponent<BezierMesh>();
 			if (!beziermesh){continue;}
 			beziermesh.Clear();
-			//scrap old meshes!
+			//TODO remove old meshes from asset database!
 			beziermesh.Start();
 			AssetDatabase.CreateAsset(beziermesh.GetComponent<MeshFilter>().mesh,"Assets/RoadMesh/Road"+beziermesh.GetComponent<MeshFilter>().mesh.GetInstanceID().ToString()+".asset");
 		}
