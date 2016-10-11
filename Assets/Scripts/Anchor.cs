@@ -1,10 +1,10 @@
 ﻿using UnityEngine;
 using System.Collections;
 
+//used by the roadbuilder to rebuild curves to correct intersection points
 
 public class Anchor : MonoBehaviour
 {
-	
 	public CubicBezier3D Curve;
 	public enum AnchorPointType
 	{
@@ -29,12 +29,9 @@ public class Anchor : MonoBehaviour
 
 		}
 	}
-	//public Transform Target;
-	//public float Power = 12;
 
 	void OnDrawGizmos()
 	{
-		//Gizmos.DrawWireMesh(
 		Gizmos.color = Color.green;
 		Gizmos.DrawLine(transform.position,transform.forward * Power + transform.position);
 

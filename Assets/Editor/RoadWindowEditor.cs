@@ -65,6 +65,11 @@ public class RoadWindowEditor : EditorWindow
 			Bake();
 		}
 
+		if (GUILayout.Button("Refresh All Props"))
+		{
+			RefreshProps();
+		}
+
 		if (GUI.changed)
 		{
 			EditorUtility.SetDirty(settings);
@@ -75,6 +80,18 @@ public class RoadWindowEditor : EditorWindow
 
 	}
 
+	void RefreshProps()
+	{
+		foreach(BezierMesh curvemesh in FindObjectsOfType<BezierMesh>())
+		{
+			foreach(var spawners in curvemesh.GetComponents<PlaceOffsetMesh>())
+			{
+				spawners.Clear();
+				spawners.PlacePrefabs();
+			}
+		}
+	}
+
 	void Bake()
 	{
 		foreach(CubicBezier3D curve in FindObjectsOfType<CubicBezier3D>())
@@ -83,7 +100,7 @@ public class RoadWindowEditor : EditorWindow
 			if (!beziermesh){continue;}
 			beziermesh.Clear();
 			//TODO remove old meshes from asset database!
-			beziermesh.Start();
+			beziermesh.Generate();
 			AssetDatabase.CreateAsset(beziermesh.GetComponent<MeshFilter>().mesh,"Assets/RoadMesh/Road"+beziermesh.GetComponent<MeshFilter>().mesh.GetInstanceID().ToString()+".asset");
 		}
 		AssetDatabase.SaveAssets();
@@ -169,12 +186,11 @@ public class RoadWindowEditor : EditorWindow
 	void OnSceneGUI(SceneView sceneView) {
 		// Do your drawing here using Handles.
 
-		if (settings == null)
+		if (settings != null)
 		{
 			//redraw this window
-			return;
+			if (showWindow){ShowWindow();}
 		}
-		if (showWindow){ShowWindow();}
 
 		Event e = Event.current;
 		Ray r = HandleUtility.GUIPointToWorldRay( Event.current.mousePosition );
@@ -194,38 +210,40 @@ public class RoadWindowEditor : EditorWindow
 			hitPoint = r.GetPoint(zeroplaneDistance);
 		}
 
-
-		if (e.type == EventType.keyDown)
+		if (settings != null)
 		{
-			if (e.keyCode == KeyCode.Escape)
+			if (e.type == EventType.keyDown)
 			{
-				Clear();
-			}
-
-			if (e.keyCode == KeyCode.I)
-				showWindow = !showWindow;
-			//gui popup window
-		}
-
-		foreach (var a in FindObjectsOfType<Anchor>())
-		{
-			if (a.Curve != null)
-			{
-				a.Curve.DrawCurve();
-				continue;
-			}
-			//Handles.DrawWireDisc(j.transform.position,j.transform.up,4);
-			if (Handles.Button(a.transform.position+a.transform.forward * 3.5f,Quaternion.LookRotation(Vector3.up),1,1,Handles.CircleCap))
-			{
-				if (selectedAnchor == null)
+				if (e.keyCode == KeyCode.Escape)
 				{
-					selectedAnchor = a;
-					break;
-				}
-				else
-				{
-					BuildRoad(selectedAnchor,a);
 					Clear();
+				}
+
+				if (e.keyCode == KeyCode.I)
+					showWindow = !showWindow;
+				//gui popup window
+			}
+
+			foreach (var a in FindObjectsOfType<Anchor>())
+			{
+				if (a.Curve != null)
+				{
+					a.Curve.DrawCurve();
+					continue;
+				}
+				//Handles.DrawWireDisc(j.transform.position,j.transform.up,4);
+				if (Handles.Button(a.transform.position+a.transform.forward * 3.5f,Quaternion.LookRotation(Vector3.up),1,1,Handles.CircleCap))
+				{
+					if (selectedAnchor == null)
+					{
+						selectedAnchor = a;
+						break;
+					}
+					else
+					{
+						BuildRoad(selectedAnchor,a);
+						Clear();
+					}
 				}
 			}
 		}
@@ -252,7 +270,7 @@ public class RoadWindowEditor : EditorWindow
 				{
 					if (a.Curve == curve)
 					{
-						
+						Handles.color = Color.white;
 						Vector3 value = Handles.Slider(a.transform.position + Vector3.up,a.transform.forward * a.Power);
 
 						float delta = Vector3.Distance(value+Vector3.down,a.transform.position);
@@ -270,6 +288,9 @@ public class RoadWindowEditor : EditorWindow
 		}
 	}
 
+	/// <summary>
+	/// For each curve, if it can find a beginning and end anchor, update the curve to those anchor points
+	/// </summary>
 	void RebuildAllRoads()
 	{
 		Dictionary<CubicBezier3D,Anchor>Curves = new Dictionary<CubicBezier3D,Anchor>();
@@ -292,24 +313,5 @@ public class RoadWindowEditor : EditorWindow
 				Curves.Add(curve,a);
 			}
 		}
-	}
-		
-	void DrawCurve(CubicBezier3D curve)
-	{
-		/*
-		if (r.Anchors.Count != 2){return;}
-		if (r.Anchors[0] == null || r.Anchors[1] == null){return;}
-		Anchor start = r.Anchors[0];
-		Anchor end = r.Anchors[1];
-
-		Handles.DrawBezier(
-			start.transform.position,
-			end.transform.position,
-			start.transform.forward * start.Power + start.transform.position,
-			end.transform.forward * end.Power + end.transform.position,
-			Color.white,
-			null,
-			5
-		);*/
 	}
 }

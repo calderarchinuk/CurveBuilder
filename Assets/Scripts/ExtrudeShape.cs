@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
 using System.Collections;
 
+//collection of vertices and mesh info for the shape extruded along curve meshes
+
 [CreateAssetMenu(fileName = "ExtrudeShape", menuName = "ExtrudeShape", order = 1)]
 public class ExtrudeShape: ScriptableObject
 {

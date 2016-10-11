@@ -19,7 +19,7 @@ public class CubicBezier3D : MonoBehaviour {
 	public Vector3 p2 = Vector3.forward*2;
 	public Vector3 p3 = Vector3.forward*3;
 
-
+	//currently unused
 	public bool UpdateCurve = false;
 
 	//TODO if this curve isn't being update, cache these points
@@ -32,6 +32,29 @@ public class CubicBezier3D : MonoBehaviour {
 			path.Add(new OrientedPoint(GetPoint(pts,i/(float)SectionCount),GetOrientation3D(pts,i/(float)SectionCount,Vector3.up)));
 		}
 		return path;
+	}
+
+	public float GetDistance()
+	{
+		float totalLength = 0f;
+		Vector3 prev = p0;
+		List<OrientedPoint> oriented = EvaluatePoints();
+		List<Vector3> points = new List<Vector3>();
+		Vector3[] pts = new Vector3[]{p0,p1,p2,p3};
+		for( int i = 0; i < SectionCount; i++ ) {
+			float t = ( (float)i ) / ( SectionCount );
+
+			foreach(var v in oriented)
+			{
+				points.Add(v.position);
+			}
+
+			Vector3 pt = GetPoint(pts, t );
+			float diff = ( prev - pt ).magnitude;
+			totalLength += diff;
+			prev = pt;
+		}
+		return totalLength;
 	}
 
 	public Vector3 GetPoint( Vector3[] pts, float t ) {
@@ -93,10 +116,5 @@ public class CubicBezier3D : MonoBehaviour {
 		);
 
 		#endif
-	}
-
-	void OnDrawGizmos()
-	{
-		
 	}
 }

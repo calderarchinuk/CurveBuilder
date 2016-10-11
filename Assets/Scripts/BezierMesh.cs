@@ -1,18 +1,19 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public class BezierMesh : MonoBehaviour
 {
-	//public bool UniqueMesh = true;
 	public ExtrudeShape es;
 	public Material material;
 	CubicBezier3D curve;
 
-	public void Start()
+	public void Generate()
 	{
-		//if (UniqueMesh && GetComponent<UniqueMesh>()==null)gameObject.AddComponent<UniqueMesh>();
-
+		Clear();
 		if (GetComponent<MeshFilter>()==null)
 		{
 			gameObject.AddComponent<MeshFilter>();
@@ -23,18 +24,14 @@ public class BezierMesh : MonoBehaviour
 			if (material != null)
 				GetComponent<MeshRenderer>().material = material;
 		}
-		curve = GetComponent<CubicBezier3D>();
-		if (!curve.UpdateCurve)
-		{
-			this.enabled = false;
-		}
+
 		EvalutateAndExtrude();
+		mesh.Optimize();
 
 		if (GetComponent<MeshCollider>() == null)
 		{
 			gameObject.AddComponent<MeshCollider>();
 		}
-		mesh.Optimize();
 	}
 
 	//unique mesh
@@ -64,21 +61,28 @@ public class BezierMesh : MonoBehaviour
 
 	public void Clear()
 	{
+		#if UNITY_EDITOR
+		MeshFilter m = GetComponent<MeshFilter>();
+		if (m != null && m.mesh != null)
+		{
+			AssetDatabase.DeleteAsset("Assets/RoadMesh/"+m.mesh.name+".asset");
+			AssetDatabase.Refresh();
+		}
 		DestroyImmediate(GetComponent<MeshRenderer>());
 		DestroyImmediate(GetComponent<MeshFilter>());
 		DestroyImmediate(GetComponent<MeshCollider>());
+		#endif
 		this.enabled = true;
-	}
-
-	void Update ()
-	{
-		EvalutateAndExtrude();
 	}
 
 	void EvalutateAndExtrude()
 	{
-		List<OrientedPoint> path = curve.EvaluatePoints();
+		List<OrientedPoint> path = gameObject.GetComponent<CubicBezier3D>().EvaluatePoints();
 		Extrude(GetComponent<MeshFilter>().mesh,es,path.ToArray());
+		if (path.Count == 0)
+		{
+			Debug.LogWarning("path length is 0 points!",this);
+		}
 	}
 
 	void Extrude(Mesh mesh, ExtrudeShape shape, OrientedPoint[] path)
@@ -108,16 +112,6 @@ public class BezierMesh : MonoBehaviour
 				vertices[id] = path[i].LocalToWorld( shape.vert2Ds[j] );
 				normals[id] = path[i].LocalToWorldDirection( shape.normals[j] );
 				uvs[id] = new Vector2( shape.us[j], i / es.UTotalLength() ); //TODO use calclengthtable to fix stretching here!
-				//uvs[id] = new Vector2( shape.us[j], i / es.us.Sample(j) ); //TODO use calclengthtable to fix stretching here!
-
-
-				//i is the path. j is the drawn shape?
-				//Vector2 uv = new Vector2();
-				//uv.x = shape.us[j];
-				//uv.y = i / es.us.Sample(j);  //TODO use calclengthtable to fix stretching here!
-				//uv.y = CalcLengthTableInfo(shape.us,curve);
-
-				//uvs[id] = uv;
 			}
 		}
 

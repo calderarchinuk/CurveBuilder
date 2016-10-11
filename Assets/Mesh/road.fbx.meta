@@ -11,27 +11,37 @@ ModelImporter:
     100006: Intersection_Y
     100008: //RootNode
     100010: RoadShape_Full
+    100012: Intersection_CapRound
+    100014: Streelight
     400000: Intersection_Cap
     400002: Intersection_T
     400004: Intersection_X
     400006: Intersection_Y
     400008: //RootNode
     400010: RoadShape_Full
+    400012: Intersection_CapRound
+    400014: Streelight
     2300000: Intersection_Cap
     2300002: Intersection_T
     2300004: Intersection_X
     2300006: Intersection_Y
     2300008: RoadShape_Full
+    2300010: Intersection_CapRound
+    2300012: Streelight
     3300000: Intersection_Cap
     3300002: Intersection_T
     3300004: Intersection_X
     3300006: Intersection_Y
     3300008: RoadShape_Full
+    3300010: Intersection_CapRound
+    3300012: Streelight
     4300000: Intersection_Cap
     4300002: Intersection_Y
     4300004: RoadShape_Full
     4300006: Intersection_T
     4300008: Intersection_X
+    4300010: Streelight
+    4300012: Intersection_CapRound
   materials:
     importMaterials: 0
     materialName: 0
