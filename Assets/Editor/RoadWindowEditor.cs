@@ -9,6 +9,8 @@ public class RoadWindowEditor : EditorWindow
 	Vector3 savedPos;
 	static RoadEditorSettings settings;
 
+	float RoadMeshScale = 1;
+
 	[MenuItem ("Window/RoadEditor")]
 	static void Init () {
 		// Get existing open window or if none, make a new one:
@@ -54,6 +56,8 @@ public class RoadWindowEditor : EditorWindow
 			settings.Intersections[i].Prefab = (GameObject)EditorGUILayout.ObjectField("Prefab",settings.Intersections[i].Prefab,typeof(GameObject),false);
 			//Intersections[i].Prefabs = editoruig
 		}
+
+		RoadMeshScale = EditorGUILayout.Slider("Curve Secion Multiplier",RoadMeshScale,0.1f,2);
 
 		if (GUILayout.Button("Rebuild All Roads"))
 		{
@@ -152,7 +156,7 @@ public class RoadWindowEditor : EditorWindow
 		mesh.es = settings.extudeShape;
 
 
-		curve.SectionCount = (int)Vector3.Distance(begin.transform.position,end.transform.position) * 2;
+		curve.SectionCount = (int)(Vector3.Distance(begin.transform.position,end.transform.position) * RoadMeshScale);
 
 		curve.p0 = begin.transform.position;
 		curve.p1 = begin.transform.position + begin.transform.forward * begin.Power;
@@ -165,6 +169,7 @@ public class RoadWindowEditor : EditorWindow
 		EditorUtility.SetDirty(begin);
 		EditorUtility.SetDirty(end);
 		UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
+		Selection.activeGameObject = curve.gameObject;
 	}
 
 	bool showWindow;
@@ -177,6 +182,7 @@ public class RoadWindowEditor : EditorWindow
 			{
 				var prefab = (GameObject)PrefabUtility.InstantiatePrefab(v.Prefab);
 				prefab.transform.position = savedPos;
+				Selection.activeGameObject = prefab;
 				showWindow = false;
 			}
 		}
@@ -296,7 +302,7 @@ public class RoadWindowEditor : EditorWindow
 		Dictionary<CubicBezier3D,Anchor>Curves = new Dictionary<CubicBezier3D,Anchor>();
 		foreach (Anchor a in Object.FindObjectsOfType<Anchor>())
 		{
-			
+
 			CubicBezier3D curve = a.Curve;
 			if (curve == null){continue;}
 			if (Curves.ContainsKey(curve))
@@ -306,6 +312,9 @@ public class RoadWindowEditor : EditorWindow
 				curve.p1 = Curves[curve].transform.position + Curves[curve].transform.forward * Curves[curve].Power;
 				curve.p2 = a.transform.position + a.transform.forward * a.Power;
 				curve.p3 = a.transform.position;
+
+				curve.SectionCount = (int)(Vector3.Distance(Curves[curve].transform.position,a.transform.position) * RoadMeshScale);
+
 				Curves.Remove(curve);
 			}
 			else

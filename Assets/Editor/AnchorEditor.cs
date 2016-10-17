@@ -2,6 +2,7 @@
 using System.Collections;
 using UnityEditor;
 
+[CanEditMultipleObjects]
 [CustomEditor(typeof(Anchor))]
 public class AnchorEditor : Editor{
 
@@ -10,7 +11,7 @@ public class AnchorEditor : Editor{
 		//Anchor a = target as Anchor;
 	}
 
-	public override void OnInspectorGUI ()
+	/*public override void OnInspectorGUI ()
 	{
 		base.OnInspectorGUI ();
 		Anchor a = target as Anchor;
@@ -24,5 +25,5 @@ public class AnchorEditor : Editor{
 		}
 
 		EditorGUI.EndDisabledGroup();
-	}
+	}*/
 }

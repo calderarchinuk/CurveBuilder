@@ -6,15 +6,9 @@ using System.Collections;
 public class Anchor : MonoBehaviour
 {
 	public CubicBezier3D Curve;
-	public enum AnchorPointType
-	{
-		Start,
-		End
-	}
-	public AnchorPointType AnchorPoint;
-	public bool LockCurveToAnchor = true;
+	//public bool LockCurveToAnchor = true;
 
-	public float Power = 20;
+	public float Power = 10;
 
 	private static Mesh _anchorMesh;
 	public static Mesh AnchorMesh

@@ -6,6 +6,9 @@ Unity editor tool to create Bezier curves and evaluate points along the path. Th
 
 Later, this would also be cool to use for projectile trajectories. At the moment, I'm happy leaving this as an editor tool primarily. Provided as-is.
 
+[overview](imgs/overview.png "Overview")
+
+
 ##TODO
 * fence builder window
 * extrude shape editor / extrude mesh
