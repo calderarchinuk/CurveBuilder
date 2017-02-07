@@ -40,8 +40,7 @@ public class PlaceOffsetMesh : MonoBehaviour
 
 		if (SpawnByDistance)
 		{
-			Vector3[] pts = new Vector3[]{curve.p0,curve.p1,curve.p2,curve.p3};
-			float totalDistance = curve.GetDistance();
+			float totalDistance = curve.GetDistance(Steps);
 			float distance = totalDistance; 
 
 			if (DistanceSteps > 1)
@@ -49,7 +48,7 @@ public class PlaceOffsetMesh : MonoBehaviour
 				while(distance > 0)
 				{
 					distance -= DistanceSteps;
-					Vector3 startPoint = curve.GetPoint(pts,distance/totalDistance);
+					Vector3 startPoint = curve.GetPoint(distance/totalDistance);
 					Gizmos.color = Color.red;
 					Gizmos.DrawLine(startPoint,startPoint + Vector3.up*10);
 				}
@@ -58,15 +57,15 @@ public class PlaceOffsetMesh : MonoBehaviour
 		}
 		else
 		{
-			Vector3[] pts = new Vector3[]{curve.p0,curve.p1,curve.p2,curve.p3};
+			//Vector3[] pts = new Vector3[]{curve.p0,curve.p1,curve.p2,curve.p3};
 			for (int i = 1; i<Steps+1; i++)
 			{
 				float t = (float)i/((float)Steps+1);
 				Gizmos.color = Color.red;
 
-				Vector3 startPoint = curve.GetPoint(pts,t);
-				Vector3 normal = curve.GetNormal3D(pts,t,Vector3.up);
-				Vector3 tangent = curve.GetTangent(pts,t);
+				Vector3 startPoint = curve.GetPoint(t);
+				Vector3 normal = curve.GetNormal3D(t,Vector3.up);
+				Vector3 tangent = curve.GetTangent(t);
 				if (LeftSide)
 				{
 					Vector3 outPoint = Vector3.Cross(tangent,normal) * OffsetDistance;
@@ -92,11 +91,9 @@ public class PlaceOffsetMesh : MonoBehaviour
 		{
 			float t = (float)i/((float)Steps+1);
 
-			Vector3[] pts = new Vector3[]{curve.p0,curve.p1,curve.p2,curve.p3};
-
-			Vector3 startPoint = curve.GetPoint(pts,t);
-			Vector3 normal = curve.GetNormal3D(pts,t,Vector3.up);
-			Vector3 tangent = curve.GetTangent(pts,t);
+			Vector3 startPoint = curve.GetPoint(t);
+			Vector3 normal = curve.GetNormal3D(t,Vector3.up);
+			Vector3 tangent = curve.GetTangent(t);
 
 			if (LeftSide)
 			{

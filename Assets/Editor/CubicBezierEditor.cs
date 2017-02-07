@@ -20,7 +20,7 @@ public class CubicBezierEditor : Editor{
 		Handles.DrawLine(t.p0,t.p1);
 		Handles.DrawLine(t.p2,t.p3);
 		*/
-		var points = t.EvaluatePoints();
+		var points = t.EvaluatePoints(10);
 
 		for (int i = 0; i<points.Count; i++)
 		{

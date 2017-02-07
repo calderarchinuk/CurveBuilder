@@ -155,13 +155,13 @@ public class RoadWindowEditor : EditorWindow
 		mesh.material = settings.roadMaterial;
 		mesh.es = settings.extudeShape;
 
+		//TODO section count should be on the mesh generator
+		//curve.SectionCount = (int)(Vector3.Distance(begin.transform.position,end.transform.position) * RoadMeshScale);
 
-		curve.SectionCount = (int)(Vector3.Distance(begin.transform.position,end.transform.position) * RoadMeshScale);
-
-		curve.p0 = begin.transform.position;
-		curve.p1 = begin.transform.position + begin.transform.forward * begin.Power;
-		curve.p2 = end.transform.position + end.transform.forward * end.Power;
-		curve.p3 = end.transform.position;
+		curve.pts[0] = begin.transform.position;
+		curve.pts[1] = begin.transform.position + begin.transform.forward * begin.Power;
+		curve.pts[2] = end.transform.position + end.transform.forward * end.Power;
+		curve.pts[3] = end.transform.position;
 
 		begin.Curve = curve;
 		end.Curve = curve;
@@ -308,12 +308,13 @@ public class RoadWindowEditor : EditorWindow
 			if (Curves.ContainsKey(curve))
 			{
 				//rebuilt
-				curve.p0 = Curves[curve].transform.position;
-				curve.p1 = Curves[curve].transform.position + Curves[curve].transform.forward * Curves[curve].Power;
-				curve.p2 = a.transform.position + a.transform.forward * a.Power;
-				curve.p3 = a.transform.position;
+				curve.pts[0] = Curves[curve].transform.position;
+				curve.pts[1] = Curves[curve].transform.position + Curves[curve].transform.forward * Curves[curve].Power;
+				curve.pts[2] = a.transform.position + a.transform.forward * a.Power;
+				curve.pts[3] = a.transform.position;
 
-				curve.SectionCount = (int)(Vector3.Distance(Curves[curve].transform.position,a.transform.position) * RoadMeshScale);
+				//TODO section count should be on the mesh generator
+				//curve.SectionCount = (int)(Vector3.Distance(Curves[curve].transform.position,a.transform.position) * RoadMeshScale);
 
 				Curves.Remove(curve);
 			}

@@ -24,3 +24,5 @@ Later, this would also be cool to use for projectile trajectories. At the moment
 
 ### References
 * [Joachim Holmér at Unite 2015](https://www.youtube.com/watch?v=o9RK6O2kOKo)
+* [BezierPath.cs](http://www.devmag.org.za/downloads/bezier_curves/BezierPath.cs)
+* [catlikecoding](http://catlikecoding.com/unity/tutorials/curves-and-splines/)

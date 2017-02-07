@@ -26,10 +26,10 @@ public class BezierMeshEditor : Editor{
 				if (savedAnchor != null)
 				{
 					//rebuilt
-					curve.p0 = savedAnchor.transform.position;
-					curve.p1 = savedAnchor.transform.position + savedAnchor.transform.forward * savedAnchor.Power;
-					curve.p2 = a.transform.position + a.transform.forward * a.Power;
-					curve.p3 = a.transform.position;
+					curve.pts[0] = savedAnchor.transform.position;
+					curve.pts[1] = savedAnchor.transform.position + savedAnchor.transform.forward * savedAnchor.Power;
+					curve.pts[2] = a.transform.position + a.transform.forward * a.Power;
+					curve.pts[3] = a.transform.position;
 					break;
 				}
 				else
