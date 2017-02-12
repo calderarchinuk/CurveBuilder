@@ -102,11 +102,21 @@ public class CubicBezier3D : MonoBehaviour
 	}
 
 	#if UNITY_EDITOR
-	Color editorColor = new Color(1f,1f,0.5f,0.3f);
+	Color editorColor = new Color(0.5f,1f,0.5f,0.3f);
 	#endif
 	public void DrawCurve()
 	{
 		#if UNITY_EDITOR
+
+		Gizmos.matrix = transform.localToWorldMatrix;
+		//UnityEditor.Handles.matrix = transform.localToWorldMatrix;
+
+		Gizmos.color = editorColor;
+		Gizmos.DrawRay(pts[0],Vector3.up);
+		Gizmos.DrawRay(pts[3],Vector3.up);
+
+		var lastMatrix = UnityEditor.Handles.matrix;
+		UnityEditor.Handles.matrix = transform.localToWorldMatrix;
 
 		UnityEditor.Handles.DrawBezier(
 			pts[0],
@@ -117,6 +127,8 @@ public class CubicBezier3D : MonoBehaviour
 			UnityEditor.EditorGUIUtility.whiteTexture,
 			5
 		);
+
+		UnityEditor.Handles.matrix = lastMatrix;
 
 		#endif
 	}

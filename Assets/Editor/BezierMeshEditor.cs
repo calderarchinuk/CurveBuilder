@@ -10,6 +10,16 @@ public class BezierMeshEditor : Editor{
 		base.OnInspectorGUI ();
 		BezierMesh b = target as BezierMesh;
 
+		if (GUI.changed)
+		{
+			b.ClearPath();
+		}
+
+		if (b.SectionCount < 1)
+		{
+			b.SectionCount = 1;
+		}
+
 		if (GUILayout.Button("Clear Mesh"))
 		{
 			b.Clear();

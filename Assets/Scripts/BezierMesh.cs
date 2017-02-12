@@ -39,6 +39,9 @@ public class BezierMesh : MonoBehaviour
 				mf.sharedMesh = _mesh = new Mesh();
 				ownerID = gameObject.GetInstanceID();
 				_mesh.name = "Mesh [" + ownerID + "]";
+				#if UNITY_EDITOR
+				AssetDatabase.CreateAsset(_mesh,"Assets/RoadMesh/Mesh"+ownerID+".asset");
+				#endif
 			}
 			return _mesh;
 		}
@@ -46,14 +49,17 @@ public class BezierMesh : MonoBehaviour
 
 	public ExtrudeShape es;
 	public Material material;
+	public float MaterialScale = 16;
 
 	public int SectionCount = 20;
+
+	private List<OrientedPoint> path;
 
 	public void Generate()
 	{
 		Clear();
 
-		List<OrientedPoint> path = curve.EvaluatePoints(SectionCount);
+		path = curve.EvaluatePoints(SectionCount);
 
 		if (path.Count == 0)
 		{
@@ -64,7 +70,10 @@ public class BezierMesh : MonoBehaviour
 		Extrude(mesh,es,path.ToArray());
 	}
 
-
+	public void ClearPath()
+	{
+		path = null;
+	}
 
 	public void Clear()
 	{
@@ -76,9 +85,6 @@ public class BezierMesh : MonoBehaviour
 			AssetDatabase.Refresh();
 			m.sharedMesh = null;
 		}
-		//DestroyImmediate(GetComponent<MeshRenderer>());
-		//DestroyImmediate(GetComponent<MeshFilter>());
-		//DestroyImmediate(GetComponent<MeshCollider>());
 		#endif
 	}
 
@@ -108,6 +114,8 @@ public class BezierMesh : MonoBehaviour
 		Vector3[] normals 		= new Vector3[ vertCount ];
 		Vector2[] uvs 			= new Vector2[ vertCount ];
 
+		float totalDistance = GetTotalLengthOfCurve();
+
 		for( int i = 0; i < edgeLoops; i++ )
 		{
 			int offset = i * vertsInShape;
@@ -116,8 +124,9 @@ public class BezierMesh : MonoBehaviour
 				int id = offset + j;
 				vertices[id] = path[i].LocalToWorld( shape.vert2Ds[j] );
 				normals[id] = path[i].LocalToWorldDirection( shape.normals[j] );
-				//uvs[id] = new Vector2( shape.us[j], i / es.UTotalLength() ); //TODO use calclengthtable to fix stretching here!
-				uvs[id] = new Vector2( shape.us[j], i / curve.GetDistance(edgeLoops) );
+				float v = GetVAtSection(totalDistance,i) * MaterialScale;
+
+				uvs[id] = new Vector2(shape.us[j], v);
 			}
 		}
 
@@ -145,31 +154,79 @@ public class BezierMesh : MonoBehaviour
 		mesh.triangles = triangleIndices;
 		mesh.normals = normals;
 		mesh.uv = uvs;
+		#if UNITY_EDITOR
 		MeshUtility.Optimize(mesh);
+		#endif
 	}
 
-	//TODO proper calculations on uvs
-	public void CalcLengthTableInfo(float[] arr, CubicBezier3D curve)
+	//return 0-1 coords for v based on distance of curve
+	public float GetVAtSection(float totallengthofcurve,int section)
 	{
-		arr[0] = 0f;
-		float totalLength = 0f;
-		Vector3 prev = curve.pts[0];
-		for( int i = 1; i < arr.Length; i++ )
-		{
-			float t = ( (float)i ) / ( arr.Length - 1 );
+		if (path == null)
+			path = curve.EvaluatePoints(SectionCount);
 
-			List<OrientedPoint> oriented = curve.EvaluatePoints(arr.Length);
-			List<Vector3> points = new List<Vector3>();
-			foreach(var v in oriented)
+		Vector3 prev = path[0].position;
+		float myLength = 0;
+
+		if (section == path.Count)
+		{
+			return 1;
+		}
+
+		for( int i = 0; i < section+1; i++ )
+		{
+			float diff = ( prev - path[i].position ).magnitude;
+			myLength += diff;
+			prev = path[i].position;
+		}
+		return myLength / totallengthofcurve;
+	}
+
+	float GetVRounded(float totaldistance)
+	{
+		return totaldistance%MaterialScale;
+	}
+
+	//return real distance of curve
+	public float GetTotalLengthOfCurve()
+	{
+		Vector3 prev = curve.pts[0];
+		float totalLength = 0;
+		for( int i = 0; i < path.Count; i++ )
+		{
+			float diff = ( prev - path[i].position ).magnitude;
+			totalLength += diff;
+			prev = path[i].position;
+		}
+		return totalLength;
+	}
+
+	void OnDrawGizmos()
+	{
+		if (es == null){return;}
+
+		if (path == null)
+			path = curve.EvaluatePoints(SectionCount);
+
+		Gizmos.matrix = transform.localToWorldMatrix;
+		//float totaldist = GetTotalLengthOfCurve();
+
+		//Handles.color = Color.red;
+		//UnityEditor.Handles.Label(path[0].position + Vector3.up * 2, totaldist.ToString());
+
+
+
+		for (int j = 0; j<path.Count; j++)
+		{
+			for (int i = 0; i < es.vert2Ds.Length-1; i++)
 			{
-				points.Add(v.position);
+				Gizmos.DrawLine(path[j].LocalToWorld(es.vert2Ds[i]),path[j].LocalToWorld(es.vert2Ds[i+1]));
 			}
 
-			Vector3 pt = curve.GetPoint( t );
-			float diff = ( prev - pt ).magnitude;
-			totalLength += diff;
-			arr[i] = totalLength;
-			prev = pt;
+			//Handles.color = Color.green;
+			//UnityEditor.Handles.Label(path[j].position,GetVAtSection(totaldist,j).ToString());
+			//float normalizedDist = (float)j/((float)path.Count-1);
+			;
 		}
 	}
 }
