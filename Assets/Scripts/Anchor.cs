@@ -5,7 +5,7 @@ using System.Collections;
 
 public class Anchor : MonoBehaviour
 {
-	public CubicBezier3D Curve;
+	public CubicBezierPath Curve;
 	//public bool LockCurveToAnchor = true;
 
 	public float Power = 10;

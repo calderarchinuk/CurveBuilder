@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 public class PlaceOffsetMesh : MonoBehaviour
 {
-	CubicBezier3D curve;
+	IPath curve;
 	public GameObject Prefab;
 
 	public bool LeftSide = true;
@@ -36,7 +36,9 @@ public class PlaceOffsetMesh : MonoBehaviour
 	void OnDrawGizmos()
 	{
 		if (curve == null)
-			curve = GetComponent<CubicBezier3D>();
+			curve = GetComponent<IPath>();
+
+		Gizmos.matrix = transform.localToWorldMatrix;
 
 		if (SpawnByDistance)
 		{
@@ -57,7 +59,6 @@ public class PlaceOffsetMesh : MonoBehaviour
 		}
 		else
 		{
-			//Vector3[] pts = new Vector3[]{curve.p0,curve.p1,curve.p2,curve.p3};
 			for (int i = 1; i<Steps+1; i++)
 			{
 				float t = (float)i/((float)Steps+1);
@@ -85,7 +86,7 @@ public class PlaceOffsetMesh : MonoBehaviour
 		List<OrientedPoint> returnlist = new List<OrientedPoint>();
 
 		if (curve == null)
-			curve = GetComponent<CubicBezier3D>();
+			curve = GetComponent<IPath>();
 
 		for (int i = 1; i<Steps+1; i++)
 		{

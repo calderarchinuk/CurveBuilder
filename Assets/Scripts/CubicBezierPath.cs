@@ -11,7 +11,7 @@ using System.Collections.Generic;
 /// <summary>
 /// hold the description of the curve and the functions to evaluate this curve
 /// </summary>
-public class CubicBezier3D : MonoBehaviour
+public class CubicBezierPath : MonoBehaviour, IPath
 {
 	public Vector3[] pts = new Vector3[4]{Vector3.zero,Vector3.forward*1,Vector3.forward*2,Vector3.forward*3};
 
@@ -26,7 +26,7 @@ public class CubicBezier3D : MonoBehaviour
 		return path;
 	}
 
-	//gets the total distance of all the line sections
+	//gets the total distance of all the line sections up to this section count
 	public float GetDistance(int sectionCount)
 	{
 		float totalLength = 0f;

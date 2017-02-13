@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using UnityEditor;
 #endif
 
-public class BezierMesh : MonoBehaviour
+public class PathMesh : MonoBehaviour
 {
 	MeshFilter _meshFilter;
 	MeshFilter mf
@@ -17,13 +17,17 @@ public class BezierMesh : MonoBehaviour
 		}
 	}
 
-	CubicBezier3D _curve;
-	CubicBezier3D curve
+	IPath _path;
+	IPath path
 	{
 		get
 		{
-			_curve = this.GetOrAddComponent<CubicBezier3D>();
-			return _curve;
+			if (_path == null)
+			{
+				_path = GetComponent<IPath>();
+			}
+			//_path = this.GetOrAddComponent<IPath>();
+			return _path;
 		}
 	}
 
@@ -40,7 +44,8 @@ public class BezierMesh : MonoBehaviour
 				ownerID = gameObject.GetInstanceID();
 				_mesh.name = "Mesh [" + ownerID + "]";
 				#if UNITY_EDITOR
-				AssetDatabase.CreateAsset(_mesh,"Assets/RoadMesh/Mesh"+ownerID+".asset");
+				System.IO.Directory.CreateDirectory(Application.dataPath+"/GeneratedMesh");
+				AssetDatabase.CreateAsset(_mesh,"Assets/GeneratedMesh/Mesh"+ownerID+".asset");
 				#endif
 			}
 			return _mesh;
@@ -53,26 +58,26 @@ public class BezierMesh : MonoBehaviour
 
 	public int SectionCount = 20;
 
-	private List<OrientedPoint> path;
+	private List<OrientedPoint> pathPoints;
 
 	public void Generate()
 	{
 		Clear();
 
-		path = curve.EvaluatePoints(SectionCount);
+		pathPoints = path.EvaluatePoints(SectionCount);
 
-		if (path.Count == 0)
+		if (pathPoints.Count == 0)
 		{
 			Debug.LogWarning("path length is 0 points!",this);
 			return;
 		}
 			
-		Extrude(mesh,es,path.ToArray());
+		Extrude(mesh,es,pathPoints.ToArray());
 	}
 
 	public void ClearPath()
 	{
-		path = null;
+		pathPoints = null;
 	}
 
 	public void Clear()
@@ -97,7 +102,7 @@ public class BezierMesh : MonoBehaviour
 		}
 		if (mesh == null)
 		{
-			Debug.LogWarning("mesh is null!",gameObject);
+			Debug.LogWarning("Mesh is null!",gameObject);
 			return;
 		}
 
@@ -114,7 +119,7 @@ public class BezierMesh : MonoBehaviour
 		Vector3[] normals 		= new Vector3[ vertCount ];
 		Vector2[] uvs 			= new Vector2[ vertCount ];
 
-		float totalDistance = GetTotalLengthOfCurve();
+		float totalDistance = GetTotalLengthOfPath();
 
 		for( int i = 0; i < edgeLoops; i++ )
 		{
@@ -124,7 +129,7 @@ public class BezierMesh : MonoBehaviour
 				int id = offset + j;
 				vertices[id] = path[i].LocalToWorld( shape.vert2Ds[j] );
 				normals[id] = path[i].LocalToWorldDirection( shape.normals[j] );
-				float v = GetVAtSection(totalDistance,i) * MaterialScale;
+				float v = GetVAtSection(totalDistance,i);
 
 				uvs[id] = new Vector2(shape.us[j], v);
 			}
@@ -159,27 +164,31 @@ public class BezierMesh : MonoBehaviour
 		#endif
 	}
 
-	//return 0-1 coords for v based on distance of curve
+	//return 0-X coords for v based on distance of curve
 	public float GetVAtSection(float totallengthofcurve,int section)
 	{
-		if (path == null)
-			path = curve.EvaluatePoints(SectionCount);
+		//1m is 0-1
+		//then /MaterialScale
 
-		Vector3 prev = path[0].position;
+		if (pathPoints == null)
+			pathPoints = path.EvaluatePoints(SectionCount);
+
+		Vector3 prev = pathPoints[0].position;
 		float myLength = 0;
 
-		if (section == path.Count)
+		if (section == pathPoints.Count)
 		{
 			return 1;
 		}
 
 		for( int i = 0; i < section+1; i++ )
 		{
-			float diff = ( prev - path[i].position ).magnitude;
+			float diff = ( prev - pathPoints[i].position ).magnitude;
 			myLength += diff;
-			prev = path[i].position;
+			prev = pathPoints[i].position;
 		}
-		return myLength / totallengthofcurve;
+
+		return myLength/MaterialScale;// / totallengthofcurve;
 	}
 
 	float GetVRounded(float totaldistance)
@@ -187,16 +196,16 @@ public class BezierMesh : MonoBehaviour
 		return totaldistance%MaterialScale;
 	}
 
-	//return real distance of curve
-	public float GetTotalLengthOfCurve()
+	//return real distance of path
+	public float GetTotalLengthOfPath()
 	{
-		Vector3 prev = curve.pts[0];
+		Vector3 prev = path.GetPoint(0);
 		float totalLength = 0;
-		for( int i = 0; i < path.Count; i++ )
+		for( int i = 0; i < pathPoints.Count; i++ )
 		{
-			float diff = ( prev - path[i].position ).magnitude;
+			float diff = ( prev - pathPoints[i].position ).magnitude;
 			totalLength += diff;
-			prev = path[i].position;
+			prev = pathPoints[i].position;
 		}
 		return totalLength;
 	}
@@ -205,8 +214,8 @@ public class BezierMesh : MonoBehaviour
 	{
 		if (es == null){return;}
 
-		if (path == null)
-			path = curve.EvaluatePoints(SectionCount);
+		if (pathPoints == null)
+			pathPoints = path.EvaluatePoints(SectionCount);
 
 		Gizmos.matrix = transform.localToWorldMatrix;
 		//float totaldist = GetTotalLengthOfCurve();
@@ -216,11 +225,11 @@ public class BezierMesh : MonoBehaviour
 
 
 
-		for (int j = 0; j<path.Count; j++)
+		for (int j = 0; j<pathPoints.Count; j++)
 		{
 			for (int i = 0; i < es.vert2Ds.Length-1; i++)
 			{
-				Gizmos.DrawLine(path[j].LocalToWorld(es.vert2Ds[i]),path[j].LocalToWorld(es.vert2Ds[i+1]));
+				Gizmos.DrawLine(pathPoints[j].LocalToWorld(es.vert2Ds[i]),pathPoints[j].LocalToWorld(es.vert2Ds[i+1]));
 			}
 
 			//Handles.color = Color.green;

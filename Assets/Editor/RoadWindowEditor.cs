@@ -86,9 +86,9 @@ public class RoadWindowEditor : EditorWindow
 
 	void RefreshProps()
 	{
-		foreach(BezierMesh curvemesh in FindObjectsOfType<BezierMesh>())
+		foreach(var pathmesh in FindObjectsOfType<PathMesh>())
 		{
-			foreach(var spawners in curvemesh.GetComponents<PlaceOffsetMesh>())
+			foreach(var spawners in pathmesh.GetComponents<PlaceOffsetMesh>())
 			{
 				spawners.Clear();
 				spawners.PlacePrefabs();
@@ -98,14 +98,12 @@ public class RoadWindowEditor : EditorWindow
 
 	void Bake()
 	{
-		foreach(CubicBezier3D curve in FindObjectsOfType<CubicBezier3D>())
+		foreach (var pathMesh in FindObjectsOfType<PathMesh>())
 		{
-			var beziermesh = curve.GetComponent<BezierMesh>();
-			if (!beziermesh){continue;}
-			beziermesh.Clear();
+			pathMesh.Clear();
 			//TODO remove old meshes from asset database!
-			beziermesh.Generate();
-			AssetDatabase.CreateAsset(beziermesh.GetComponent<MeshFilter>().mesh,"Assets/RoadMesh/Road"+beziermesh.GetComponent<MeshFilter>().mesh.GetInstanceID().ToString()+".asset");
+			pathMesh.Generate();
+			//AssetDatabase.CreateAsset(pathMesh.GetComponent<MeshFilter>().mesh,"Assets/RoadMesh/Road"+pathMesh.GetComponent<MeshFilter>().mesh.GetInstanceID().ToString()+".asset");
 		}
 		AssetDatabase.SaveAssets();
 	}
@@ -150,13 +148,10 @@ public class RoadWindowEditor : EditorWindow
 		if (begin == null || end == null){return;}
 
 		GameObject go = new GameObject("Road");
-		var curve = go.AddComponent<CubicBezier3D>();
-		var mesh = go.AddComponent<BezierMesh>();
+		var curve = go.AddComponent<CubicBezierPath>();
+		var mesh = go.AddComponent<PathMesh>();
 		mesh.material = settings.roadMaterial;
 		mesh.es = settings.extudeShape;
-
-		//TODO section count should be on the mesh generator
-		//curve.SectionCount = (int)(Vector3.Distance(begin.transform.position,end.transform.position) * RoadMeshScale);
 
 		curve.pts[0] = begin.transform.position;
 		curve.pts[1] = begin.transform.position + begin.transform.forward * begin.Power;
@@ -268,7 +263,7 @@ public class RoadWindowEditor : EditorWindow
 
 		if (Selection.activeGameObject != null)
 		{
-			var curve = Selection.activeGameObject.GetComponent<CubicBezier3D>();
+			var curve = Selection.activeGameObject.GetComponent<CubicBezierPath>();
 
 			if (curve)
 			{
@@ -299,11 +294,10 @@ public class RoadWindowEditor : EditorWindow
 	/// </summary>
 	void RebuildAllRoads()
 	{
-		Dictionary<CubicBezier3D,Anchor>Curves = new Dictionary<CubicBezier3D,Anchor>();
+		Dictionary<CubicBezierPath,Anchor>Curves = new Dictionary<CubicBezierPath,Anchor>();
 		foreach (Anchor a in Object.FindObjectsOfType<Anchor>())
 		{
-
-			CubicBezier3D curve = a.Curve;
+			CubicBezierPath curve = a.Curve;
 			if (curve == null){continue;}
 			if (Curves.ContainsKey(curve))
 			{

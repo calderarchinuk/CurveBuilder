@@ -2,13 +2,13 @@
 using System.Collections;
 using UnityEditor;
 
-[CustomEditor(typeof(BezierMesh))]
-public class BezierMeshEditor : Editor{
+[CustomEditor(typeof(PathMesh))]
+public class PathMeshEditor : Editor{
 
 	public override void OnInspectorGUI ()
 	{
 		base.OnInspectorGUI ();
-		BezierMesh b = target as BezierMesh;
+		var b = target as PathMesh;
 
 		if (GUI.changed)
 		{
@@ -24,11 +24,15 @@ public class BezierMeshEditor : Editor{
 		{
 			b.Clear();
 		}
+		if (GUILayout.Button("Refresh Points"))
+		{
+			b.ClearPath();
+		}
 		if (GUILayout.Button("Build Mesh"))
 		{
 			b.Clear();
 
-			Anchor savedAnchor = null;
+			/*Anchor savedAnchor = null;
 			foreach (Anchor a in Object.FindObjectsOfType<Anchor>())
 			{
 				CubicBezier3D curve = a.Curve;
@@ -46,7 +50,7 @@ public class BezierMeshEditor : Editor{
 				{
 					savedAnchor = a;
 				}
-			}
+			}*/
 
 			b.Generate();
 		}
