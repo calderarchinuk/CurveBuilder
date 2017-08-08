@@ -33,9 +33,7 @@ public class PathMeshEditor : Editor{
 		}
 		if (GUILayout.Button(buildmesh))
 		{
-			b.ClearPath();
-			b.ClearMesh();
-			b.Generate();
+			b.Rebuild();
 		}
 		EditorGUI.EndDisabledGroup();
 	}

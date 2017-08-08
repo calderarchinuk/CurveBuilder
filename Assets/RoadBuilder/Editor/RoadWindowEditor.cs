@@ -7,9 +7,14 @@ public class RoadWindowEditor : EditorWindow
 {
 	Anchor selectedAnchor;
 	Vector3 savedPos;
-	static RoadEditorSettings settings;
+	public static RoadEditorSettings Settings;
+	public bool IntersectionsFoldout;
+	public Vector2 IntersectionCanvas;
 
 	float RoadMeshScale = 1;
+	int SelectedRoadTile = 0;
+
+	int TileBrowserGridColumns = 3;
 
 	[MenuItem ("Window/RoadEditor")]
 	static void Init () {
@@ -22,90 +27,138 @@ public class RoadWindowEditor : EditorWindow
 	{
 		if (GUILayout.Button("New Road Settings"))
 		{
-			RoadEditorSettings asset = ScriptableObject.CreateInstance<RoadEditorSettings>();
-
-			AssetDatabase.CreateAsset(asset, "Assets/NewScripableObject.asset");
-			AssetDatabase.SaveAssets();
-
-			EditorUtility.FocusProjectWindow();
-
-			Selection.activeObject = asset;
-			settings = asset;
+			NewRoadSettings();
 		}
-		settings = (RoadEditorSettings)EditorGUILayout.ObjectField("Road Editor Settings",settings,typeof(RoadEditorSettings),false);
-
+		Settings = (RoadEditorSettings)EditorGUILayout.ObjectField("Road Editor Settings",Settings,typeof(RoadEditorSettings),false);
 
 		GUILayout.Box("", new GUILayoutOption[] { GUILayout.ExpandWidth(true), GUILayout.Height(1) });
 
-		//GUILayout.EndHorizontal();
-		if (settings == null){return;}
-		EditorGUI.BeginDisabledGroup(settings == null);
-
-		//GUILayout.Label ("Settings", EditorStyles.boldLabel);
-
-		settings.roadMaterial = (Material)EditorGUILayout.ObjectField("Road Material",settings.roadMaterial,typeof(Material),false);
-		settings.extudeShape = (ExtrudeShape)EditorGUILayout.ObjectField("Extrude Shape",settings.extudeShape,typeof(ExtrudeShape),false);
-
-		ListHeader(settings.Intersections,"Intersections");
-		for (int i = 0; settings.Intersections.Count > i;i++)
+		if (Settings == null)
 		{
-			GUILayout.Space(10);
-			GUILayout.BeginHorizontal();
-			GUILayout.Label(AssetPreview.GetAssetPreview(settings.Intersections[i].Prefab),GUILayout.Width(64),GUILayout.Height(64));
-			GUILayout.BeginVertical();
-			settings.Intersections[i].Name = EditorGUILayout.TextField("Name",settings.Intersections[i].Name);
-			settings.Intersections[i].Prefab = (GameObject)EditorGUILayout.ObjectField("Prefab",settings.Intersections[i].Prefab,typeof(GameObject),false);
-			GUILayout.EndVertical();
-			GUILayout.EndHorizontal();
-			//Intersections[i].Prefabs = editoruig
+			var path = AssetDatabase.GUIDToAssetPath(EditorPrefs.GetString("LastRoadSettingsGUID"));
+			Settings = AssetDatabase.LoadAssetAtPath<RoadEditorSettings>(path);
+			if (Settings == null){return;}
 		}
 
-		RoadMeshScale = EditorGUILayout.Slider("Curve Secion Multiplier",RoadMeshScale,0.1f,2);
+		Settings.roadMaterial = (Material)EditorGUILayout.ObjectField("Road Material",Settings.roadMaterial,typeof(Material),false);
+		Settings.extudeShape = (ExtrudeShape)EditorGUILayout.ObjectField("Extrude Shape",Settings.extudeShape,typeof(ExtrudeShape),false);
 
-		if (GUILayout.Button("Rebuild All Roads"))
+		IntersectionsFoldout = EditorGUILayout.Foldout(IntersectionsFoldout,"Edit Intersections");
+
+
+
+		if (IntersectionsFoldout)
 		{
-			RebuildAllRoads();
+			ListHeader(Settings.Intersections,"Intersections");
+			IntersectionCanvas = EditorGUILayout.BeginScrollView(IntersectionCanvas);
+			for (int i = 0; Settings.Intersections.Count > i;i++)
+			{
+				GUILayout.Space(2);
+				GUILayout.BeginHorizontal();
+				GUILayout.Label(AssetPreview.GetAssetPreview(Settings.Intersections[i].Prefab),GUILayout.Width(64),GUILayout.Height(64));
+				GUILayout.BeginVertical();
+				Settings.Intersections[i].Name = EditorGUILayout.TextField("Name",Settings.Intersections[i].Name);
+				Settings.Intersections[i].Prefab = (GameObject)EditorGUILayout.ObjectField("Prefab",Settings.Intersections[i].Prefab,typeof(GameObject),false);
+				GUILayout.EndVertical();
+				GUILayout.EndHorizontal();
+				//Intersections[i].Prefabs = editoruig
+			}
+			EditorGUILayout.EndScrollView();
+		}
+		else
+		{
+			List<Texture2D> intersectionImages = new List<Texture2D>();
+			for(int i = 0; i<Settings.Intersections.Count;i++)
+			{
+				intersectionImages.Add(AssetPreview.GetAssetPreview(Settings.Intersections[i].Prefab));
+			}
+			SelectedRoadTile = GUILayout.SelectionGrid(SelectedRoadTile,intersectionImages.ToArray(),TileBrowserGridColumns);
 		}
 
-		if (GUILayout.Button("Bake Road Meshes"))
+		//RoadMeshScale = EditorGUILayout.Slider("Curve Secion Multiplier",RoadMeshScale,0.1f,2);
+
+		if (GUILayout.Button("Recalculate All Curves"))
 		{
-			Bake();
+			foreach(var intersection in Object.FindObjectsOfType<Intersection>())
+			{
+				intersection.ForceAnchorDirections();
+			}
+		}
+
+		/*if (GUILayout.Button("Rebuild All Roads"))
+		{
+			foreach(var intersection in Object.FindObjectsOfType<Intersection>())
+			{
+				intersection.ForceAnchorDirections();
+				intersection.RecalculateAllAnchoredPaths();
+			}
+			//RebuildAllRoads();
+		}*/
+
+		if (GUILayout.Button("Rebuild All Road Meshes"))
+		{
+			EditorUtility.DisplayProgressBar("Rebuild All Road Meshes","Generating and saving meshes for all roads",0);
+
+			var allIntersections = Object.FindObjectsOfType<Intersection>();
+			for (int i = 0; i<allIntersections.Length;i++)
+			{
+				EditorUtility.DisplayProgressBar("Rebuild All Road Meshes","Generating and saving meshes for all roads",i/allIntersections.Length);
+				allIntersections[i].RebuildAllAnchoredPaths(false);
+			}
+			AssetDatabase.SaveAssets();
+			EditorUtility.ClearProgressBar();
+			UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
 		}
 
 		if (GUILayout.Button("Refresh All Props"))
 		{
-			RefreshProps();
-		}
-
-		if (GUI.changed)
-		{
-			EditorUtility.SetDirty(settings);
-		}
-
-		EditorGUI.EndDisabledGroup();
-
-
-	}
-
-	void RefreshProps()
-	{
-		foreach(var pathmesh in FindObjectsOfType<PathMesh>())
-		{
-			foreach(var spawners in pathmesh.GetComponents<PathDetail>())
+			foreach(var spawners in FindObjectsOfType<PathDetail>())
 			{
 				spawners.Clear();
 				spawners.PlacePrefabs();
 			}
+			UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
+		}
+
+		if (GUI.changed)
+		{
+			EditorUtility.SetDirty(Settings);
+		}
+
+		EditorGUI.EndDisabledGroup();
+	}
+
+	void NewRoadSettings()
+	{
+		RoadEditorSettings asset = ScriptableObject.CreateInstance<RoadEditorSettings>();
+
+		AssetDatabase.CreateAsset(asset, "Assets/NewScripableObject.asset");
+		AssetDatabase.SaveAssets();
+
+		EditorUtility.FocusProjectWindow();
+
+		Selection.activeObject = asset;
+		Settings = asset;
+	}
+
+	[System.Obsolete("called in roadbuilder gui")]
+	void RefreshProps()
+	{
+		foreach(var spawners in FindObjectsOfType<PathDetail>())
+		{
+			spawners.Clear();
+			spawners.PlacePrefabs();
 		}
 	}
 
+	[System.Obsolete("use Intersection RebuildAllAnchoredPaths instead")]
 	void Bake()
 	{
 		foreach (var pathMesh in FindObjectsOfType<PathMesh>())
 		{
 			pathMesh.ClearMesh();
 			//TODO remove old meshes from asset database!
-			pathMesh.Generate();
+			pathMesh.Rebuild();
 			//AssetDatabase.CreateAsset(pathMesh.GetComponent<MeshFilter>().mesh,"Assets/RoadMesh/Road"+pathMesh.GetComponent<MeshFilter>().mesh.GetInstanceID().ToString()+".asset");
 		}
 		AssetDatabase.SaveAssets();
@@ -118,11 +171,19 @@ public class RoadWindowEditor : EditorWindow
 		SceneView.onSceneGUIDelegate -= this.OnSceneGUI;
 		// Add (or re-add) the delegate.
 		SceneView.onSceneGUIDelegate += this.OnSceneGUI;
+
+
+		if (Settings != null)
+		{
+			var guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(Settings));
+			EditorPrefs.SetString("LastRoadSettingsGUID",guid);
+		}
 	}
 
 	void OnDestroy() {
 		// When the window is destroyed, remove the delegate
 		// so that it will no longer do any drawing.
+
 		SceneView.onSceneGUIDelegate -= this.OnSceneGUI;
 	}
 
@@ -132,7 +193,7 @@ public class RoadWindowEditor : EditorWindow
 		showWindow = false;
 	}
 
-	public void ListHeader(List<Intersection> _list, string _label)
+	public void ListHeader(List<IntersectionType> _list, string _label)
 	{
 		GUILayout.BeginHorizontal();
 		GUILayout.Label(_label);
@@ -142,7 +203,7 @@ public class RoadWindowEditor : EditorWindow
 				_list.RemoveAt(_list.Count-1);
 		}
 		if (GUILayout.Button("+",GUILayout.Width(50)))
-			_list.Add(new Intersection());
+			_list.Add(new IntersectionType());
 		GUILayout.EndHorizontal();
 	}
 
@@ -153,28 +214,28 @@ public class RoadWindowEditor : EditorWindow
 		GameObject go = new GameObject("Road");
 		var curve = go.AddComponent<CubicBezierPath>();
 		var mesh = go.AddComponent<PathMesh>();
-		mesh.material = settings.roadMaterial;
-		mesh.ExtrudeShape = settings.extudeShape;
+		mesh.material = Settings.roadMaterial;
+		mesh.ExtrudeShape = Settings.extudeShape;
 
 		curve.pts[0] = begin.transform.position;
 		curve.pts[1] = begin.transform.position + begin.transform.forward * begin.Power;
 		curve.pts[2] = end.transform.position + end.transform.forward * end.Power;
 		curve.pts[3] = end.transform.position;
 
-		begin.Curve = curve;
-		end.Curve = curve;
+		begin.Path = go;
+		end.Path = go;
 
 		EditorUtility.SetDirty(begin);
 		EditorUtility.SetDirty(end);
 		UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
-		Selection.activeGameObject = curve.gameObject;
+		//Selection.activeGameObject = curve.gameObject;
 	}
 
 	bool showWindow;
 	void ShowWindow()
 	{
 		Handles.BeginGUI();
-		foreach (var v in settings.Intersections)
+		foreach (var v in Settings.Intersections)
 		{
 			if (GUILayout.Button(v.Name))
 			{
@@ -190,7 +251,7 @@ public class RoadWindowEditor : EditorWindow
 	void OnSceneGUI(SceneView sceneView) {
 		// Do your drawing here using Handles.
 
-		if (settings != null)
+		if (Settings != null)
 		{
 			//redraw this window
 			if (showWindow){ShowWindow();}
@@ -214,7 +275,7 @@ public class RoadWindowEditor : EditorWindow
 			hitPoint = r.GetPoint(zeroplaneDistance);
 		}
 
-		if (settings != null)
+		if (Settings != null)
 		{
 			if (e.type == EventType.keyDown)
 			{
@@ -230,7 +291,7 @@ public class RoadWindowEditor : EditorWindow
 
 			foreach (var a in FindObjectsOfType<Anchor>())
 			{
-				if (a.Curve != null)
+				if (a.Path != null)
 				{
 					//a.Curve.DrawCurve();
 					continue;
@@ -272,7 +333,7 @@ public class RoadWindowEditor : EditorWindow
 			{
 				foreach (var a in FindObjectsOfType<Anchor>())
 				{
-					if (a.Curve == curve)
+					if (a.Path == curve)
 					{
 						Handles.color = Color.white;
 						Vector3 value = Handles.Slider(a.transform.position + Vector3.up,a.transform.forward * a.Power);
@@ -295,12 +356,13 @@ public class RoadWindowEditor : EditorWindow
 	/// <summary>
 	/// For each curve, if it can find a beginning and end anchor, update the curve to those anchor points
 	/// </summary>
+	[System.Obsolete("use Intersection RebuildAllAnchoredPaths instead")]
 	void RebuildAllRoads()
 	{
 		Dictionary<CubicBezierPath,Anchor>Curves = new Dictionary<CubicBezierPath,Anchor>();
 		foreach (Anchor a in Object.FindObjectsOfType<Anchor>())
 		{
-			CubicBezierPath curve = a.Curve;
+			CubicBezierPath curve = a.Path.GetComponent<CubicBezierPath>();
 			if (curve == null){continue;}
 			if (Curves.ContainsKey(curve))
 			{

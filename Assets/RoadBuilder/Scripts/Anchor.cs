@@ -5,9 +5,7 @@ using System.Collections;
 
 public class Anchor : MonoBehaviour
 {
-	public CubicBezierPath Curve;
-	//public bool LockCurveToAnchor = true;
-
+	public GameObject Path;
 	public float Power = 10;
 
 	private static Mesh _anchorMesh;
@@ -24,9 +22,47 @@ public class Anchor : MonoBehaviour
 		}
 	}
 
-	void OnDrawGizmos()
+	/// <summary>
+	/// rebuilds the curve using this anchor's position and the other anchor's position
+	/// </summary>
+	public void ForceDirection (bool updateOther)
 	{
-		Gizmos.color = Color.green;
+		var curve = Path.GetComponent<CubicBezierPath>();
+		if (curve == null) {return;}
+
+		if (Vector3.Distance(curve.pts[0],transform.position) < Vector3.Distance(curve.pts[3],transform.position))
+		{
+			curve.pts[0] = transform.position;
+			curve.pts[1] = curve.pts[0] + transform.forward * Power;
+		}
+		else
+		{
+			curve.pts[3] = transform.position;
+			curve.pts[2] = curve.pts[3] + transform.forward * Power;
+		}
+
+		if (!updateOther){return;}
+
+		foreach(var otherAnchor in FindObjectsOfType<Anchor>())
+		{
+			if (otherAnchor == this){continue;}
+			if (otherAnchor.Path == Path)
+			{
+				otherAnchor.ForceDirection(false);
+				break;
+			}
+		}
+	}
+
+	Color LastColor;
+	public void SetGizmoColor(Color color)
+	{
+		LastColor = color;
+	}
+
+	public void DrawCustomGizmos()
+	{
+		Gizmos.color = LastColor;
 		Gizmos.DrawLine(transform.position,transform.forward * Power + transform.position);
 
 		Gizmos.color = Color.red;

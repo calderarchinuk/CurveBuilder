@@ -8,5 +8,5 @@ public class RoadEditorSettings : ScriptableObject
 	public Material roadMaterial;
 	public ExtrudeShape extudeShape;
 
-	public List<Intersection>Intersections = new List<Intersection>();
+	public List<IntersectionType>Intersections = new List<IntersectionType>();
 }

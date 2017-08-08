@@ -15,7 +15,6 @@ public class PathMesh : MonoBehaviour
 		get
 		{
 			_meshFilter = this.GetOrAddComponent<MeshFilter>();
-			this.GetOrAddComponent<MeshRenderer>();
 			return _meshFilter;
 		}
 	}
@@ -63,7 +62,14 @@ public class PathMesh : MonoBehaviour
 
 	private List<OrientedPoint> pathPoints;
 
-	public void Generate()
+	public void Rebuild()
+	{
+		ClearPath();
+		ClearMesh();
+		Generate();
+	}
+
+	void Generate()
 	{
 		ClearMesh();
 
@@ -74,7 +80,13 @@ public class PathMesh : MonoBehaviour
 			Debug.LogWarning("path length is 0 points!",this);
 			return;
 		}
-			
+
+		var renderer = this.GetOrAddComponent<MeshRenderer>();
+		if (renderer.sharedMaterial == null)
+		{
+			renderer.sharedMaterial = material;
+		}
+
 		Extrude(mesh,ExtrudeShape,pathPoints.ToArray());
 	}
 
