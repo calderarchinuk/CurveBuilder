@@ -16,6 +16,10 @@ public class RoadWindowEditor : EditorWindow
 
 	int TileBrowserGridColumns = 3;
 
+	bool AutoAddIntersect = false;
+	bool placingIntersection = false;
+	Vector3 lastIntersectionPos;
+
 	[MenuItem ("Window/RoadEditor")]
 	static void Init () {
 		// Get existing open window or if none, make a new one:
@@ -40,8 +44,13 @@ public class RoadWindowEditor : EditorWindow
 			if (Settings == null){return;}
 		}
 
+
+		Settings.automaticallyBuildRoads = EditorGUILayout.Toggle("Automaticall Build Roads",Settings.automaticallyBuildRoads);
+		Settings.roadsHaveMeshColliders = EditorGUILayout.Toggle("Automaticall Add Mesh Colliders",Settings.roadsHaveMeshColliders);
 		Settings.roadMaterial = (Material)EditorGUILayout.ObjectField("Road Material",Settings.roadMaterial,typeof(Material),false);
 		Settings.extudeShape = (ExtrudeShape)EditorGUILayout.ObjectField("Extrude Shape",Settings.extudeShape,typeof(ExtrudeShape),false);
+
+		AutoAddIntersect = EditorGUILayout.Toggle("Auto Add Intersect",AutoAddIntersect);
 
 		IntersectionsFoldout = EditorGUILayout.Foldout(IntersectionsFoldout,"Edit Intersections");
 
@@ -227,6 +236,16 @@ public class RoadWindowEditor : EditorWindow
 
 		EditorUtility.SetDirty(begin);
 		EditorUtility.SetDirty(end);
+
+		if (Settings.automaticallyBuildRoads)
+		{
+			mesh.Rebuild();
+		}
+		if (Settings.roadsHaveMeshColliders)
+		{
+			go.AddComponent<MeshCollider>();
+		}
+
 		UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
 		//Selection.activeGameObject = curve.gameObject;
 	}
@@ -248,9 +267,10 @@ public class RoadWindowEditor : EditorWindow
 		Handles.EndGUI();
 	}
 
-	void OnSceneGUI(SceneView sceneView) {
-		// Do your drawing here using Handles.
+	Mesh dummyMesh;
 
+	void OnSceneGUI(SceneView sceneView)
+	{
 		if (Settings != null)
 		{
 			//redraw this window
@@ -275,80 +295,214 @@ public class RoadWindowEditor : EditorWindow
 			hitPoint = r.GetPoint(zeroplaneDistance);
 		}
 
-		if (Settings != null)
+		if (Settings == null)
 		{
-			if (e.type == EventType.keyDown)
+			return;
+		}
+			
+		if (e.type == EventType.keyDown)
+		{
+			if (e.keyCode == KeyCode.Escape)
 			{
-				if (e.keyCode == KeyCode.Escape)
-				{
-					Clear();
-				}
-
-				if (e.keyCode == KeyCode.I)
-					showWindow = !showWindow;
-				//gui popup window
+				//Clear();
+				selectedAnchor = null;
+				placingIntersection = false;
 			}
 
-			foreach (var a in FindObjectsOfType<Anchor>())
+			//if (e.keyCode == KeyCode.I)
+			//	showWindow = !showWindow;
+			//gui popup window
+		}
+
+		foreach (var a in FindObjectsOfType<Anchor>())
+		{
+			if (a.Path != null)
 			{
-				if (a.Path != null)
+				//a.Curve.DrawCurve();
+				continue;
+			}
+			//Handles.DrawWireDisc(j.transform.position,j.transform.up,4);
+			if (Handles.Button(a.transform.position+a.transform.forward * 3.5f,Quaternion.LookRotation(Vector3.up),1,1,Handles.CircleCap))
+			{
+				if (selectedAnchor == null)
 				{
-					//a.Curve.DrawCurve();
-					continue;
+					selectedAnchor = a;
+					break;
 				}
-				//Handles.DrawWireDisc(j.transform.position,j.transform.up,4);
-				if (Handles.Button(a.transform.position+a.transform.forward * 3.5f,Quaternion.LookRotation(Vector3.up),1,1,Handles.CircleCap))
+				else
 				{
-					if (selectedAnchor == null)
-					{
-						selectedAnchor = a;
-						break;
-					}
-					else
-					{
-						BuildRoad(selectedAnchor,a);
-						Clear();
-					}
+					BuildRoad(selectedAnchor,a);
+					//Clear();
+					selectedAnchor = null;
 				}
 			}
 		}
 
-		if (!showWindow)
+		if (!placingIntersection)
 		{
 			savedPos = hitPoint;
 		}
 		Handles.color = Color.blue;
 		Handles.DrawWireDisc(savedPos,Vector3.up,5);
 
+		Debug.DrawRay(lastIntersectionPos,Vector3.up * 20,Color.red);
+
 		if (selectedAnchor != null)
 		{
 			Handles.DrawDottedLine(selectedAnchor.transform.position,savedPos,3);
 		}
 
-		if (Selection.activeGameObject != null)
+		if (AutoAddIntersect && selectedAnchor != null)
 		{
-			var curve = Selection.activeGameObject.GetComponent<CubicBezierPath>();
-
-			if (curve)
+			//TODO bool for debug mesh on reroute intersections (without meshfilters)
+			var prefab = Settings.Intersections[SelectedRoadTile].Prefab;
+			var meshfilter = prefab.GetComponentInChildren<MeshFilter>();
+			Mesh mesh = null;
+			if (meshfilter == null)
 			{
-				foreach (var a in FindObjectsOfType<Anchor>())
+				if (dummyMesh == null)
 				{
-					if (a.Path == curve)
-					{
-						Handles.color = Color.white;
-						Vector3 value = Handles.Slider(a.transform.position + Vector3.up,a.transform.forward * a.Power);
+					dummyMesh = new Mesh();
+				}
+				mesh = dummyMesh;
+			}
+			else
+			{
+				mesh = meshfilter.sharedMesh;
+			}
 
-						float delta = Vector3.Distance(value+Vector3.down,a.transform.position);
-						if (delta > 0.01f)
+			if (mesh != null)
+			{
+				if (Event.current.isMouse && Event.current.button == 0 && Event.current.type == EventType.mouseDown)
+				{
+					if (!placingIntersection)
+					{
+						placingIntersection = true;
+						lastIntersectionPos = savedPos;
+						//start placing
+					}
+					else
+					{
+						//spawn prefab
+						//GameObject intersection = PrefabUtility.InstantiatePrefab(Settings.Intersections[SelectedRoadTile].Prefab) as GameObject;
+
+						var intersection = (GameObject)PrefabUtility.InstantiatePrefab(Settings.Intersections[SelectedRoadTile].Prefab);
+						intersection.transform.position = savedPos;
+
+						intersection.transform.position = lastIntersectionPos;
+
+						Quaternion rot = Quaternion.LookRotation(savedPos-hitPoint);
+						intersection.transform.rotation = rot;
+
+
+						Anchor closestAnchor = null;
+						float closestDistance = 999;
+						foreach(var v in intersection.GetComponentsInChildren<Anchor>())
 						{
-							a.Power = delta;
-							//Debug.Log(a.Power);
-							EditorUtility.SetDirty(a);
-							UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
+							Vector3 pos = savedPos + (rot * v.transform.position);
+							Vector3 dir = (rot *v.transform.position) + (rot * v.transform.forward);
+
+							Handles.DrawLine(pos,savedPos + dir*10);
+							float dist = Vector3.Distance(pos,selectedAnchor.transform.position);
+							if (dist < closestDistance)
+							{
+								closestDistance = dist;
+								closestAnchor = v;
+							}
 						}
-						Handles.Label(a.transform.position + Vector3.up,"Power "+a.Power);
+
+						BuildRoad(selectedAnchor,closestAnchor);
+						placingIntersection = false;
+						selectedAnchor = null;
+					}
+
+					Event.current.Use();
+				}
+				else if (placingIntersection)
+				{
+					//rotate from savedPos toward mouse position
+					Quaternion rot = Quaternion.LookRotation(savedPos-hitPoint);
+
+					Graphics.DrawMesh(mesh,savedPos,rot,Settings.roadMaterial,0);
+					Anchor closestAnchor = null;
+					float closestDistance = 999;
+					foreach(var v in prefab.GetComponentsInChildren<Anchor>())
+					{
+						Vector3 pos = savedPos + (rot * v.transform.position);
+						Vector3 dir = (rot *v.transform.position) + (rot * v.transform.forward);
+
+						Handles.DrawLine(pos,savedPos + dir*10);
+						float dist = Vector3.Distance(pos,selectedAnchor.transform.position);
+						if (dist < closestDistance)
+						{
+							closestDistance = dist;
+							closestAnchor = v;
+						}
+					}
+					if (closestAnchor != null)
+					{
+						UnityEditor.Handles.DrawBezier(
+							selectedAnchor.transform.position,
+							savedPos + (rot * closestAnchor.transform.position),
+							selectedAnchor.transform.position + selectedAnchor.transform.forward * 10,
+							savedPos + (rot * closestAnchor.transform.position) + (rot *closestAnchor.transform.position) + (rot * closestAnchor.transform.forward) * 10,
+							Color.cyan,
+							UnityEditor.EditorGUIUtility.whiteTexture,
+							2
+						);
 					}
 				}
+				else
+				{
+					Graphics.DrawMesh(mesh,hitPoint,Quaternion.identity,Settings.roadMaterial,0);
+				}
+				EditorUtility.SetDirty(Settings);
+			}
+		}
+		else if (AutoAddIntersect)
+		{
+			//TODO bool for debug mesh on reroute intersections (without meshfilters)
+			var prefab = Settings.Intersections[SelectedRoadTile].Prefab;
+			var meshfilter = prefab.GetComponentInChildren<MeshFilter>();
+			Mesh mesh = null;
+			if (meshfilter == null)
+			{
+				if (dummyMesh == null)
+				{
+					dummyMesh = new Mesh();
+				}
+				mesh = dummyMesh;
+			}
+			else
+			{
+				mesh = meshfilter.sharedMesh;
+			}
+
+			Graphics.DrawMesh(mesh,hitPoint,Quaternion.identity,Settings.roadMaterial,0);
+			EditorUtility.SetDirty(Settings);
+
+			if (Event.current.isMouse && Event.current.button == 0 && Event.current.type == EventType.mouseDown)
+			{
+				if (hit.collider != null)
+				{
+					if (hit.collider.GetComponentInParent<Intersection>() != null || hit.collider.GetComponent<IPath>() != null)
+					{
+						//TODO insert tool - click to split a path and place an intersection
+						//atm you clicked on some other road tool thing, so you probably want to select that
+						AutoAddIntersect = false;
+						return;
+					}
+				}
+
+				if (Settings == null || Settings.Intersections[SelectedRoadTile] == null || Settings.Intersections[SelectedRoadTile].Prefab == null)
+				{
+					return;
+				}
+				//just click and place intersection quickly
+				var intersection = (GameObject)PrefabUtility.InstantiatePrefab(Settings.Intersections[SelectedRoadTile].Prefab);
+				intersection.transform.position = savedPos;
+				Event.current.Use();
+				UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
 			}
 		}
 	}

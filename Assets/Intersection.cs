@@ -77,11 +77,13 @@ public class IntersectionEditor : UnityEditor.Editor
 			intersection.RebuildAllAnchoredPaths(true);
 		}
 
+		UnityEditor.EditorGUI.BeginDisabledGroup(true);
 		if (GUILayout.Button("Rebuild Details"))
 		{
 			//TODO rebuild details for connected paths
-			Debug.LogError("TODO - rebuild details along roads");
+			Debug.Log("TODO - rebuild details along roads");
 		}
+		UnityEditor.EditorGUI.EndDisabledGroup();
 
 		if (UnityEditor.Selection.gameObjects.Length > 1){return;}
 
@@ -100,12 +102,12 @@ public class IntersectionEditor : UnityEditor.Editor
 
 
 			UnityEditor.EditorGUI.BeginDisabledGroup(null == anchor.Path);
-			if (GUILayout.Button("R"))
+			if (GUILayout.Button(new GUIContent("R","Next Road")))
 			{
 				UnityEditor.Selection.activeGameObject = anchor.Path;
 			}
 
-			if (GUILayout.Button("I"))
+			if (GUILayout.Button(new GUIContent("I","Next Intersection")))
 			{
 				Debug.Log("search for next intersection");
 				foreach(var nextIntersection in FindObjectsOfType<Intersection>())
@@ -127,6 +129,15 @@ public class IntersectionEditor : UnityEditor.Editor
 
 			sliderId ++;
 			GUILayout.EndHorizontal();
+		}
+		if (GUI.changed)
+		{
+			UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
+			foreach(var anchor in intersection.GetComponentsInChildren<Anchor>())
+			{
+				UnityEditor.EditorUtility.SetDirty(anchor);
+			}
+			UnityEditor.EditorUtility.SetDirty(intersection);
 		}
 	}
 
