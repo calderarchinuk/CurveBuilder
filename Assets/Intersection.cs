@@ -21,7 +21,7 @@ public class Intersection : MonoBehaviour
 
 	/// <summary>
 	/// Fixes all anchor directions
-	/// Rebuilds all anchored paths
+	/// Rebuilds all anchored path meshes
 	/// </summary>
 	public void RebuildAllAnchoredPaths(bool rebuildAssetDatabase)
 	{

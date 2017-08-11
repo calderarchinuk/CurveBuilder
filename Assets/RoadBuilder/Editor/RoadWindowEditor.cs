@@ -104,7 +104,28 @@ public class RoadWindowEditor : EditorWindow
 			//RebuildAllRoads();
 		}*/
 
-		if (GUILayout.Button("Rebuild All Road Meshes"))
+		EditorGUI.BeginDisabledGroup(Selection.gameObjects.Length == 0);
+		if (GUILayout.Button("Rebuild Meshes - Selected Roads And Intersections"))
+		{
+			foreach(var v in Selection.gameObjects)
+			{
+				var intersection = v.GetComponent<Intersection>();
+				if (intersection)
+				{
+					intersection.RebuildAllAnchoredPaths(false);
+				}
+				var road = v.GetComponent<PathMesh>();
+				if (road)
+				{
+					road.Rebuild();
+				}
+			}
+			UnityEditor.AssetDatabase.SaveAssets();
+			UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
+		}
+		EditorGUI.EndDisabledGroup();
+
+		if (GUILayout.Button("Rebuild Meshes - All"))
 		{
 			EditorUtility.DisplayProgressBar("Rebuild All Road Meshes","Generating and saving meshes for all roads",0);
 

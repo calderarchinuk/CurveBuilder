@@ -6,7 +6,7 @@ using System.Collections;
 public class Anchor : MonoBehaviour
 {
 	public GameObject Path;
-	public float Power = 10;
+	public float Power = 20;
 
 	private static Mesh _anchorMesh;
 	public static Mesh AnchorMesh
