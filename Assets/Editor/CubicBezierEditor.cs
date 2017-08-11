@@ -1,30 +1,40 @@
-﻿using UnityEngine;
-using System.Collections;
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 using UnityEditor;
 
-[CustomEditor(typeof(CubicBezier3D))]
-public class CubicBezierEditor : Editor{
-
+[CustomEditor(typeof(CubicBezierPath))]
+public class CubicBezierEditor : Editor
+{
 	void OnSceneGUI()
 	{
-		CubicBezier3D t = target as CubicBezier3D;
-		/*
-		Handles.DrawBezier(t.p0,t.p3,t.p1,t.p2,Color.white,EditorGUIUtility.whiteTexture,3);
+		var c = (CubicBezierPath)target;
 
-		t.p0 = Handles.PositionHandle(t.p0,Quaternion.identity);
-		t.p1 = Handles.PositionHandle(t.p1,Quaternion.identity);
-		t.p2 = Handles.PositionHandle(t.p2,Quaternion.identity);
-		t.p3 = Handles.PositionHandle(t.p3,Quaternion.identity);
+		if (c.pts == null || c.pts.Length == 0){return;}
 
-		Handles.color = Color.green;
-		Handles.DrawLine(t.p0,t.p1);
-		Handles.DrawLine(t.p2,t.p3);
-		*/
-		var points = t.EvaluatePoints();
+		var lastMatrix = UnityEditor.Handles.matrix;
+		UnityEditor.Handles.matrix = c.transform.localToWorldMatrix;
 
-		for (int i = 0; i<points.Count; i++)
-		{
-			Handles.DrawLine(points[i].position,points[i].position+Vector3.up);
-		}
+		Handles.color = Color.cyan;
+
+		c.pts[0] = Handles.PositionHandle(c.pts[0],Quaternion.identity);
+		c.pts[1] = Handles.PositionHandle(c.pts[1],Quaternion.identity);
+		c.pts[2] = Handles.PositionHandle(c.pts[2],Quaternion.identity);
+		c.pts[3] = Handles.PositionHandle(c.pts[3],Quaternion.identity);
+
+		Handles.DrawLine(c.pts[0],c.pts[1]);
+		Handles.DrawLine(c.pts[2],c.pts[3]);
+
+		UnityEditor.Handles.DrawBezier(
+			c.pts[0],
+			c.pts[3],
+			c.pts[1],
+			c.pts[2],
+			Color.blue,
+			UnityEditor.EditorGUIUtility.whiteTexture,
+			2
+		);
+
+		UnityEditor.Handles.matrix = lastMatrix;
 	}
 }
