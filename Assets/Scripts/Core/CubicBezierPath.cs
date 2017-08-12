@@ -99,27 +99,4 @@ public class CubicBezierPath : MonoBehaviour, IPath
 		Vector3 normal = GetNormal3D( normalDist, up );
 		return Quaternion.LookRotation( tangent, normal );
 	}
-
-	void OnDrawGizmos()
-	{
-		DrawCurve();
-	}
-
-	#if UNITY_EDITOR
-	Color editorColor = new Color(0.5f,0.5f,1f,0.3f);
-	#endif
-	public void DrawCurve()
-	{
-		#if UNITY_EDITOR
-
-		//Gizmos.matrix = transform.localToWorldMatrix;
-		//UnityEditor.Handles.matrix = transform.localToWorldMatrix;
-
-		//if (pts == null || pts.Length == 0){return;}
-
-		//Gizmos.DrawRay(pts[0],Vector3.up);
-		//Gizmos.DrawRay(pts[3],Vector3.up);
-
-		#endif
-	}
 }

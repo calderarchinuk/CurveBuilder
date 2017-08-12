@@ -66,13 +66,6 @@ public class PathMesh : MonoBehaviour
 	{
 		ClearPath();
 		ClearMesh();
-		Generate();
-	}
-
-	void Generate()
-	{
-		ClearMesh();
-
 		pathPoints = path.EvaluatePoints(SectionCount);
 
 		if (pathPoints.Count == 0)
@@ -88,6 +81,10 @@ public class PathMesh : MonoBehaviour
 		}
 
 		Extrude(mesh,ExtrudeShape,pathPoints.ToArray());
+		if (GetComponent<MeshCollider>())
+		{
+			GetComponent<MeshCollider>().sharedMesh = mesh;
+		}
 	}
 
 	public void ClearPath()

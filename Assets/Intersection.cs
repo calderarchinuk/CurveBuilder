@@ -100,7 +100,6 @@ public class IntersectionEditor : UnityEditor.Editor
 
 			anchor.Power = UnityEditor.EditorGUILayout.Slider("Anchor " + sliderId,anchor.Power,0f,50f);
 
-
 			UnityEditor.EditorGUI.BeginDisabledGroup(null == anchor.Path);
 			if (GUILayout.Button(new GUIContent("R","Next Road")))
 			{
@@ -118,7 +117,6 @@ public class IntersectionEditor : UnityEditor.Editor
 					{
 						if (nextAnchor.Path != null && nextAnchor.Path == anchor.Path)
 						{
-							Debug.Log("found matching path. select next intersection");
 							UnityEditor.Selection.activeGameObject = nextIntersection.gameObject;
 							break;
 						}

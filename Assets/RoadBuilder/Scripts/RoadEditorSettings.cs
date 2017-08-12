@@ -9,6 +9,7 @@ public class RoadEditorSettings : ScriptableObject
 	public ExtrudeShape extudeShape;
 	public bool automaticallyBuildRoads = true;
 	public bool roadsHaveMeshColliders = true;
+	public float heightOffset = 0.1f;
 
 	public List<IntersectionType>Intersections = new List<IntersectionType>();
 }

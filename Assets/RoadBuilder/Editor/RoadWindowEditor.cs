@@ -11,7 +11,6 @@ public class RoadWindowEditor : EditorWindow
 	public bool IntersectionsFoldout;
 	public Vector2 IntersectionCanvas;
 
-	float RoadMeshScale = 1;
 	int SelectedRoadTile = 0;
 
 	int TileBrowserGridColumns = 3;
@@ -44,11 +43,13 @@ public class RoadWindowEditor : EditorWindow
 			if (Settings == null){return;}
 		}
 
+		Repaint();
 
 		Settings.automaticallyBuildRoads = EditorGUILayout.Toggle("Automaticall Build Roads",Settings.automaticallyBuildRoads);
 		Settings.roadsHaveMeshColliders = EditorGUILayout.Toggle("Automaticall Add Mesh Colliders",Settings.roadsHaveMeshColliders);
 		Settings.roadMaterial = (Material)EditorGUILayout.ObjectField("Road Material",Settings.roadMaterial,typeof(Material),false);
 		Settings.extudeShape = (ExtrudeShape)EditorGUILayout.ObjectField("Extrude Shape",Settings.extudeShape,typeof(ExtrudeShape),false);
+		Settings.heightOffset = EditorGUILayout.Slider("Intersection Height Offset",Settings.heightOffset,0,1);
 
 		AutoAddIntersect = EditorGUILayout.Toggle("Auto Add Intersect",AutoAddIntersect);
 
@@ -83,8 +84,6 @@ public class RoadWindowEditor : EditorWindow
 			}
 			SelectedRoadTile = GUILayout.SelectionGrid(SelectedRoadTile,intersectionImages.ToArray(),TileBrowserGridColumns);
 		}
-
-		//RoadMeshScale = EditorGUILayout.Slider("Curve Secion Multiplier",RoadMeshScale,0.1f,2);
 
 		if (GUILayout.Button("Recalculate All Curves"))
 		{
@@ -152,6 +151,7 @@ public class RoadWindowEditor : EditorWindow
 
 		if (GUI.changed)
 		{
+			//this refreshes the sceneview somehow
 			EditorUtility.SetDirty(Settings);
 		}
 
@@ -169,29 +169,6 @@ public class RoadWindowEditor : EditorWindow
 
 		Selection.activeObject = asset;
 		Settings = asset;
-	}
-
-	[System.Obsolete("called in roadbuilder gui")]
-	void RefreshProps()
-	{
-		foreach(var spawners in FindObjectsOfType<PathDetail>())
-		{
-			spawners.Clear();
-			spawners.PlacePrefabs();
-		}
-	}
-
-	[System.Obsolete("use Intersection RebuildAllAnchoredPaths instead")]
-	void Bake()
-	{
-		foreach (var pathMesh in FindObjectsOfType<PathMesh>())
-		{
-			pathMesh.ClearMesh();
-			//TODO remove old meshes from asset database!
-			pathMesh.Rebuild();
-			//AssetDatabase.CreateAsset(pathMesh.GetComponent<MeshFilter>().mesh,"Assets/RoadMesh/Road"+pathMesh.GetComponent<MeshFilter>().mesh.GetInstanceID().ToString()+".asset");
-		}
-		AssetDatabase.SaveAssets();
 	}
 
 	// Window has been selected
@@ -220,7 +197,6 @@ public class RoadWindowEditor : EditorWindow
 	void Clear()
 	{
 		selectedAnchor = null;
-		showWindow = false;
 	}
 
 	public void ListHeader(List<IntersectionType> _list, string _label)
@@ -242,6 +218,7 @@ public class RoadWindowEditor : EditorWindow
 		if (begin == null || end == null){return;}
 
 		GameObject go = new GameObject("Road");
+		Undo.RegisterCreatedObjectUndo(go,"Created Road");
 		var curve = go.AddComponent<CubicBezierPath>();
 		var mesh = go.AddComponent<PathMesh>();
 		mesh.material = Settings.roadMaterial;
@@ -271,33 +248,10 @@ public class RoadWindowEditor : EditorWindow
 		//Selection.activeGameObject = curve.gameObject;
 	}
 
-	bool showWindow;
-	void ShowWindow()
-	{
-		Handles.BeginGUI();
-		foreach (var v in Settings.Intersections)
-		{
-			if (GUILayout.Button(v.Name))
-			{
-				var prefab = (GameObject)PrefabUtility.InstantiatePrefab(v.Prefab);
-				prefab.transform.position = savedPos;
-				Selection.activeGameObject = prefab;
-				showWindow = false;
-			}
-		}
-		Handles.EndGUI();
-	}
-
 	Mesh dummyMesh;
 
 	void OnSceneGUI(SceneView sceneView)
 	{
-		if (Settings != null)
-		{
-			//redraw this window
-			if (showWindow){ShowWindow();}
-		}
-
 		Event e = Event.current;
 		Ray r = HandleUtility.GUIPointToWorldRay( Event.current.mousePosition );
 
@@ -350,7 +304,7 @@ public class RoadWindowEditor : EditorWindow
 					selectedAnchor = a;
 					break;
 				}
-				else
+				else if (selectedAnchor != a)
 				{
 					BuildRoad(selectedAnchor,a);
 					//Clear();
@@ -358,7 +312,7 @@ public class RoadWindowEditor : EditorWindow
 				}
 			}
 		}
-
+			
 		if (!placingIntersection)
 		{
 			savedPos = hitPoint;
@@ -405,23 +359,22 @@ public class RoadWindowEditor : EditorWindow
 					else
 					{
 						//spawn prefab
-						//GameObject intersection = PrefabUtility.InstantiatePrefab(Settings.Intersections[SelectedRoadTile].Prefab) as GameObject;
 
 						var intersection = (GameObject)PrefabUtility.InstantiatePrefab(Settings.Intersections[SelectedRoadTile].Prefab);
-						intersection.transform.position = savedPos;
+						Undo.RegisterCreatedObjectUndo(intersection,"Created Intersection");
+						intersection.transform.position = savedPos + Settings.heightOffset*Vector3.up;
 
 						intersection.transform.position = lastIntersectionPos;
 
 						Quaternion rot = Quaternion.LookRotation(savedPos-hitPoint);
 						intersection.transform.rotation = rot;
 
-
 						Anchor closestAnchor = null;
 						float closestDistance = 999;
 						foreach(var v in intersection.GetComponentsInChildren<Anchor>())
 						{
-							Vector3 pos = savedPos + (rot * v.transform.position);
-							Vector3 dir = (rot *v.transform.position) + (rot * v.transform.forward);
+							Vector3 pos = v.transform.position;
+							Vector3 dir = v.transform.forward;
 
 							Handles.DrawLine(pos,savedPos + dir*10);
 							float dist = Vector3.Distance(pos,selectedAnchor.transform.position);
@@ -435,6 +388,8 @@ public class RoadWindowEditor : EditorWindow
 						BuildRoad(selectedAnchor,closestAnchor);
 						placingIntersection = false;
 						selectedAnchor = null;
+
+						Selection.activeGameObject = intersection;
 					}
 
 					Event.current.Use();
@@ -444,7 +399,8 @@ public class RoadWindowEditor : EditorWindow
 					//rotate from savedPos toward mouse position
 					Quaternion rot = Quaternion.LookRotation(savedPos-hitPoint);
 
-					Graphics.DrawMesh(mesh,savedPos,rot,Settings.roadMaterial,0);
+					//TODO this doesn't draw scaled intersections
+					Graphics.DrawMesh(mesh,savedPos + Settings.heightOffset * Vector3.up,rot,Settings.roadMaterial,0);
 					Anchor closestAnchor = null;
 					float closestDistance = 999;
 					foreach(var v in prefab.GetComponentsInChildren<Anchor>())
@@ -521,40 +477,11 @@ public class RoadWindowEditor : EditorWindow
 				}
 				//just click and place intersection quickly
 				var intersection = (GameObject)PrefabUtility.InstantiatePrefab(Settings.Intersections[SelectedRoadTile].Prefab);
-				intersection.transform.position = savedPos;
+				Undo.RegisterCreatedObjectUndo(intersection,"Created Intersection");
+				intersection.transform.position = savedPos + Settings.heightOffset*Vector3.up;
 				Event.current.Use();
+				Selection.activeGameObject = intersection;
 				UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
-			}
-		}
-	}
-
-	/// <summary>
-	/// For each curve, if it can find a beginning and end anchor, update the curve to those anchor points
-	/// </summary>
-	[System.Obsolete("use Intersection RebuildAllAnchoredPaths instead")]
-	void RebuildAllRoads()
-	{
-		Dictionary<CubicBezierPath,Anchor>Curves = new Dictionary<CubicBezierPath,Anchor>();
-		foreach (Anchor a in Object.FindObjectsOfType<Anchor>())
-		{
-			CubicBezierPath curve = a.Path.GetComponent<CubicBezierPath>();
-			if (curve == null){continue;}
-			if (Curves.ContainsKey(curve))
-			{
-				//rebuilt
-				curve.pts[0] = Curves[curve].transform.position;
-				curve.pts[1] = Curves[curve].transform.position + Curves[curve].transform.forward * Curves[curve].Power;
-				curve.pts[2] = a.transform.position + a.transform.forward * a.Power;
-				curve.pts[3] = a.transform.position;
-
-				//TODO section count should be on the mesh generator
-				//curve.SectionCount = (int)(Vector3.Distance(Curves[curve].transform.position,a.transform.position) * RoadMeshScale);
-
-				Curves.Remove(curve);
-			}
-			else
-			{
-				Curves.Add(curve,a);
 			}
 		}
 	}
